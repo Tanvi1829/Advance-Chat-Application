@@ -38,12 +38,15 @@ app.use("/api/messages", messageRoutes);
 
 // make ready for deployment
 if (ENV.NODE_ENV === "production") {
+  // Serve static frontend files first
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-  app.get("*", (_, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+  // Only serve index.html for non-API routes
+  app.get(/^\/(?!api).*/, (_, res) => {
+    res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
   });
 }
+
 
 server.listen(PORT, () => {
   console.log("Server running on port: " + PORT);
