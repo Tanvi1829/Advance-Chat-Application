@@ -15,20 +15,19 @@ const PORT = ENV.PORT || 3000;
 
 app.use(express.json({ limit: "10mb" })); // req.body
 const allowedOrigins = [
-  "https://advance-chat-app.netlify.app", // your live frontend URL
-  "http://localhost:5173" // for local development
+  "https://advance-chat-app.netlify.app",
+  "http://localhost:5173",
 ];
 
 app.use(cors({
   origin: function(origin, callback){
-    if(!origin) return callback(null, true); // allow non-browser requests like Postman
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
-      return callback(new Error(msg), false);
+    if(!origin) return callback(null, true); // Postman or server-side requests
+    if(!allowedOrigins.includes(origin)){
+      return callback(new Error("CORS blocked"), false);
     }
     return callback(null, true);
   },
-  credentials: true, // allow cookies
+  credentials: true, // ✅ allow cookies
 }));
 
 app.use(cookieParser());
@@ -36,16 +35,17 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-// make ready for deployment
 if (ENV.NODE_ENV === "production") {
-  // Serve static frontend files first
+  // Serve static frontend files
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-  // Only serve index.html for non-API routes
+  // Only serve index.html for routes NOT starting with /api
   app.get(/^\/(?!api).*/, (_, res) => {
     res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
   });
 }
+
+
 
 
 server.listen(PORT, () => {
