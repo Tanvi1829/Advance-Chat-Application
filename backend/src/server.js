@@ -15,17 +15,19 @@ const PORT = ENV.PORT || 3000;
 
 app.use(express.json({ limit: "10mb" })); // req.body
 const allowedOrigins = [
-  "https://advance-chat-app.netlify.app", // your live frontend URL
-  "http://localhost:5173" // for local development
+  "https://advance-chat-app.netlify.app",
+  "http://localhost:5173",
 ];
 
 app.use(cors({
   origin: function(origin, callback){
-    if(!origin) return callback(null, true);
-    if(!allowedOrigins.includes(origin)) return callback(new Error("CORS blocked"), false);
+    if(!origin) return callback(null, true); // Postman or server-side requests
+    if(!allowedOrigins.includes(origin)){
+      return callback(new Error("CORS blocked"), false);
+    }
     return callback(null, true);
   },
-  credentials: true,
+  credentials: true, // ✅ allow cookies
 }));
 
 app.use(cookieParser());

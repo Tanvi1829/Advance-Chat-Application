@@ -2,24 +2,13 @@ import jwt from "jsonwebtoken";
 import { ENV } from "./env.js";
 
 export const generateToken = (userId, res) => {
-  const { JWT_SECRET } = ENV;
-  if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is not configured");
-  }
+  const token = jwt.sign({ id: userId }, ENV.JWT_SECRET, { expiresIn: "1d" });
 
-  const token = jwt.sign({ userId }, JWT_SECRET, {
-    expiresIn: "7d",
-  });
-
+  // Set cookie properly for cross-origin (Netlify frontend → Render backend)
   res.cookie("jwt", token, {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // MS
-    httpOnly: true, // prevent XSS attacks: cross-site scripting
-    sameSite: "strict", // CSRF attacks
-    secure: ENV.NODE_ENV === "development" ? false : true,
+    httpOnly: true,          // prevents JS access
+    secure: true,            // must be true on HTTPS
+    sameSite: "None",        // allows cross-origin requests
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
   });
-
-  return token;
 };
-
-// http://localhost
-// https://dsmakmk.com
