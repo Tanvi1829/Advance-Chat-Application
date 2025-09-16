@@ -14,7 +14,23 @@ const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
 
 app.use(express.json({ limit: "10mb" })); // req.body
-app.use(cors({ origin: "*", credentials: true }));
+const allowedOrigins = [
+  "https://advance-chat-app.netlify.app", // your live frontend URL
+  "http://localhost:5173" // for local development
+];
+
+app.use(cors({
+  origin: function(origin, callback){
+    if(!origin) return callback(null, true); // allow non-browser requests like Postman
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true, // allow cookies
+}));
+
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
