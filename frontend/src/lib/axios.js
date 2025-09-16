@@ -1,8 +1,8 @@
 import axios from "axios";
 
 export const axiosInstance = axios.create({
- baseURL: import.meta.env.MODE === "development"
+  baseURL: import.meta.env.MODE === "development"
     ? "http://localhost:3000"
-    : import.meta.env.VITE_API_URL,
+    : "https://advance-chat-application-8.onrender.com/api", // note /api
   withCredentials: true,
 });
