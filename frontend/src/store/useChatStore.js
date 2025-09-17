@@ -21,17 +21,18 @@ export const useChatStore = create((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 
-  getAllContacts: async () => {
-    set({ isUsersLoading: true });
-    try {
-      const res = await axiosInstance.get("/messages/contacts");
-      set({ allContacts: res.data });
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Cannot fetch contacts");
-    } finally {
-      set({ isUsersLoading: false });
-    }
-  },
+getAllContacts: async () => {
+  set({ isUsersLoading: true });
+  try {
+    const res = await axiosInstance.get("/messages/contacts");
+    set({ allContacts: res.data });
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Cannot fetch contacts");
+  } finally {
+    set({ isUsersLoading: false });
+  }
+},
+
   getMyChatPartners: async () => {
     set({ isUsersLoading: true });
     try {
