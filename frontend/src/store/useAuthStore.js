@@ -96,6 +96,13 @@ export const useAuthStore = create((set, get) => ({
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
+
+    socket.on("newMessage", (newMessage) => {
+    const { selectedUser, messages } = get();
+    if (newMessage.senderId === selectedUser?._id) {
+      set({ messages: [...messages, newMessage] });
+    }
+  });
   },
 
   disconnectSocket: () => {
