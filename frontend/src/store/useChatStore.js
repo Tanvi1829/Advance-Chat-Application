@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
+import { axiosInstance } from "../lib/axiosInstance";
 import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
 
