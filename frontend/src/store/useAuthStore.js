@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
-import axiosInstance  from "../lib/axios";
+import {axiosInstance}  from "../lib/axios";
 
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : import.meta.env.VITE_API_URL;;
 
@@ -25,37 +25,50 @@ export const useAuthStore = create((set, get) => ({
       set({ isCheckingAuth: false });
     }
   },
+  
+signup: async (data) => {
+  set({ isSigningUp: true });
+  try {
+    const res = await axiosInstance.post("/auth/signup", data);
 
-  signup: async (data) => {
-    set({ isSigningUp: true });
-    try {
-      const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
-
-      toast.success("Account created successfully!");
-      get().connectSocket();
-    } catch (error) {
-      toast.error(error.response.data.message);
-    } finally {
-      set({ isSigningUp: false });
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token);
     }
-  },
 
-  login: async (data) => {
-    set({ isLoggingIn: true });
-    try {
-      const res = await axiosInstance.post("/auth/login", data);
-      set({ authUser: res.data });
+    set({ authUser: res.data.user || res.data });
 
-      toast.success("Logged in successfully");
+    toast.success("Account created successfully!");
+    get().connectSocket();
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Signup failed");
+  } finally {
+    set({ isSigningUp: false });
+  }
+},
 
-      get().connectSocket();
-    } catch (error) {
-      toast.error(error.response.data.message);
-    } finally {
-      set({ isLoggingIn: false });
+login: async (data) => {
+  set({ isLoggingIn: true });
+  try {
+    const res = await axiosInstance.post("/auth/login", data);
+
+    // ✅ backend agar `token` return karta hai to localStorage me save karo
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token);
     }
-  },
+
+    // user data ko state me store karo
+    set({ authUser: res.data.user || res.data });
+
+    toast.success("Logged in successfully");
+
+    get().connectSocket();
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Login failed");
+  } finally {
+    set({ isLoggingIn: false });
+  }
+},
+
 
   logout: async () => {
     try {
