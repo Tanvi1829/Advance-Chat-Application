@@ -7,8 +7,8 @@ export const generateToken = (userId, res) => {
   // Set cookie properly for cross-origin (Netlify frontend → Render backend)
   res.cookie("jwt", token, {
     httpOnly: true,          // prevents JS access
-    secure: true,            // must be true on HTTPS
+    secure: ENV.NODE_ENV === "production",           // must be true on HTTPS
     sameSite: "None",        // allows cross-origin requests
-    maxAge: 1000 * 60 * 60 * 24, // 1 day
+     maxAge: 7 * 24 * 60 * 60 * 1000, // 1 day
   });
 };
