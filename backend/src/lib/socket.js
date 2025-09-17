@@ -7,10 +7,11 @@ import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server, {
+export const io = new Server(server, {
   cors: {
-    origin: [ENV.CLIENT_URL],
-    credentials: true,
+    origin: ["https://advance-chat-application-9.onrender.com"], // frontend domain
+    methods: ["GET", "POST"],
+    credentials: true, // ✅ send cookies
   },
 });
 
