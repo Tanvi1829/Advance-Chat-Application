@@ -21,7 +21,7 @@ function getTokenFromCookie(cookieName = "jwt") {
 }
 
 // Create Axios instance
-const axiosInstance = axios.create({
+export const axiosInstance = axios.create({
   baseURL: "https://advance-chat-application-8.onrender.com/api",
 });
 
@@ -37,4 +37,3 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export default axiosInstance;
