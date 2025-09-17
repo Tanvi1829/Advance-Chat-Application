@@ -17,7 +17,9 @@ app.use(express.json({ limit: "10mb" })); // req.body
 const allowedOrigins = [
   "https://advance-chat-app.netlify.app",
   "http://localhost:5173",
+  "https://advance-chat-application-9.onrender.com",  // 👈 Add this
 ];
+
 
 app.use(cors({
   origin: function(origin, callback){
