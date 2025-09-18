@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const axiosInstance = axios.create({
-  baseURL: "https://advance-chat-application-8.onrender.com/api",
+  baseURL: "https://advance-chat-application-9.onrender.com/api",
   withCredentials: true,   // 👈 ye add karo agar cookie based auth hai
 });
 
