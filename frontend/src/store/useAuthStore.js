@@ -21,59 +21,59 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.log("Error in authCheck:", error);
       set({ authUser: null });
+      // ✅ Clear token if auth check fails
+      localStorage.removeItem("token");
     } finally {
       set({ isCheckingAuth: false });
     }
   },
   
-signup: async (data) => {
-  set({ isSigningUp: true });
-  try {
-    const res = await axiosInstance.post("/auth/signup", data);
+  signup: async (data) => {
+    set({ isSigningUp: true });
+    try {
+      const res = await axiosInstance.post("/auth/signup", data);
 
-    if (res.data.token) {
-      localStorage.setItem("token", res.data.token);
+      // ✅ Store token in localStorage
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      set({ authUser: res.data });
+      toast.success("Account created successfully!");
+      get().connectSocket();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Signup failed");
+    } finally {
+      set({ isSigningUp: false });
     }
+  },
 
-    set({ authUser: res.data.user || res.data });
+  login: async (data) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await axiosInstance.post("/auth/login", data);
 
-    toast.success("Account created successfully!");
-    get().connectSocket();
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Signup failed");
-  } finally {
-    set({ isSigningUp: false });
-  }
-},
+      // ✅ Store token in localStorage
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
 
-login: async (data) => {
-  set({ isLoggingIn: true });
-  try {
-    const res = await axiosInstance.post("/auth/login", data);
-
-    // ✅ backend agar `token` return karta hai to localStorage me save karo
-    if (res.data.token) {
-      localStorage.setItem("token", res.data.token);
+      set({ authUser: res.data });
+      toast.success("Logged in successfully");
+      get().connectSocket();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Login failed");
+    } finally {
+      set({ isLoggingIn: false });
     }
-
-    // user data ko state me store karo
-    set({ authUser: res.data.user || res.data });
-
-    toast.success("Logged in successfully");
-
-    get().connectSocket();
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Login failed");
-  } finally {
-    set({ isLoggingIn: false });
-  }
-},
-
+  },
 
   logout: async () => {
     try {
       await axiosInstance.post("/auth/logout");
       set({ authUser: null });
+      // ✅ Clear token from localStorage
+      localStorage.removeItem("token");
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
@@ -98,24 +98,22 @@ login: async (data) => {
     if (!authUser || get().socket?.connected) return;
 
     const socket = io(BASE_URL, {
-      withCredentials: true, // this ensures cookies are sent with the connection
+      withCredentials: true,
     });
 
     socket.connect();
-
     set({ socket });
 
-    // listen for online users event
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
 
     socket.on("newMessage", (newMessage) => {
-    const { selectedUser, messages } = get();
-    if (newMessage.senderId === selectedUser?._id) {
-      set({ messages: [...messages, newMessage] });
-    }
-  });
+      const { selectedUser, messages } = get();
+      if (newMessage.senderId === selectedUser?._id) {
+        set({ messages: [...messages, newMessage] });
+      }
+    });
   },
 
   disconnectSocket: () => {
