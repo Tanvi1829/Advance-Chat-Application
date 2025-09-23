@@ -85,20 +85,98 @@ export const sendMessage = async (req, res) => {
   }
 };
 
+// export const getChatPartners = async (req, res) => {
+//   try {
+//     const loggedInUserId = req.user._id;
+
+//     // Use aggregation to find chat partners and their latest message
+//     const aggregation = await Message.aggregate([
+//       {
+//         $match: {
+//           $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
+//         },
+//       },
+//       {
+//         $sort: { createdAt: -1 }, // Sort messages by newest first
+//       },
+//       {
+//         $group: {
+//           _id: {
+//             $cond: [
+//               { $eq: ["$senderId", loggedInUserId] },
+//               "$receiverId",
+//               "$senderId",
+//             ],
+//           },
+//           lastMessage: { $first: "$$ROOT" }, // Get the whole latest message doc
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "_id",
+//           foreignField: "_id",
+//           as: "partner",
+//         },
+//       },
+//       {
+//         $unwind: "$partner",
+//       },
+//       {
+//         $project: {
+//           "partner.password": 0, // Exclude password
+//           lastMessage: 1,
+//         },
+//       },
+//       {
+//         $sort: { "lastMessage.createdAt": -1 }, // Sort chats by latest message time
+//       },
+//     ]);
+
+//     // Return both partner and lastMessage for each chat
+// const chatPartners = await Promise.all(
+//       aggregation.map(async (item) => {
+//         // Double-check by getting the actual latest message
+//         const latestMessage = await Message.findOne({
+//           $or: [
+//             { senderId: loggedInUserId, receiverId: item._id },
+//             { senderId: item._id, receiverId: loggedInUserId },
+//           ],
+//         }).sort({ createdAt: -1 });
+
+//         return {
+//           ...item.partner,
+//           lastMessage: latestMessage || item.lastMessage,
+//         };
+//       })
+//     );
+
+//     // Sort one more time by the actual latest message
+//     chatPartners.sort((a, b) => {
+//       const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+//       const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+//       return timeB - timeA;
+//     });
+
+//     res.status(200).json(chatPartners);
+//   } catch (error) {
+//     console.error("Error in getChatPartners: ", error.message);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+
 export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
 
-    // Use aggregation to find chat partners and their latest message
     const aggregation = await Message.aggregate([
       {
         $match: {
           $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
         },
       },
-      {
-        $sort: { createdAt: -1 }, // Sort messages by newest first
-      },
+      { $sort: { createdAt: -1 } },
       {
         $group: {
           _id: {
@@ -108,7 +186,7 @@ export const getChatPartners = async (req, res) => {
               "$senderId",
             ],
           },
-          lastMessage: { $first: "$$ROOT" }, // Get the whole latest message doc
+          lastMessage: { $first: "$$ROOT" },
         },
       },
       {
@@ -119,39 +197,41 @@ export const getChatPartners = async (req, res) => {
           as: "partner",
         },
       },
-      {
-        $unwind: "$partner",
-      },
+      { $unwind: "$partner" },
       {
         $project: {
-          "partner.password": 0, // Exclude password
+          "partner.password": 0,
           lastMessage: 1,
         },
       },
-      {
-        $sort: { "lastMessage.createdAt": -1 }, // Sort chats by latest message time
-      },
+      { $sort: { "lastMessage.createdAt": -1 } },
     ]);
 
-    // Return both partner and lastMessage for each chat
-const chatPartners = await Promise.all(
+    // Add try/catch inside map for better error reporting
+    const chatPartners = await Promise.all(
       aggregation.map(async (item) => {
-        // Double-check by getting the actual latest message
-        const latestMessage = await Message.findOne({
-          $or: [
-            { senderId: loggedInUserId, receiverId: item._id },
-            { senderId: item._id, receiverId: loggedInUserId },
-          ],
-        }).sort({ createdAt: -1 });
+        try {
+          const latestMessage = await Message.findOne({
+            $or: [
+              { senderId: loggedInUserId, receiverId: item._id },
+              { senderId: item._id, receiverId: loggedInUserId },
+            ],
+          }).sort({ createdAt: -1 });
 
-        return {
-          ...item.partner,
-          lastMessage: latestMessage || item.lastMessage,
-        };
+          return {
+            ...item.partner,
+            lastMessage: latestMessage || item.lastMessage,
+          };
+        } catch (err) {
+          console.error("Error fetching latest message for user:", item._id, err);
+          return {
+            ...item.partner,
+            lastMessage: item.lastMessage || null,
+          };
+        }
       })
     );
 
-    // Sort one more time by the actual latest message
     chatPartners.sort((a, b) => {
       const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
       const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
@@ -160,7 +240,7 @@ const chatPartners = await Promise.all(
 
     res.status(200).json(chatPartners);
   } catch (error) {
-    console.error("Error in getChatPartners: ", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error in getChatPartners:", error);
+    res.status(500).json({ error: "Internal server error", details: error.message });
   }
 };
