@@ -18,13 +18,20 @@ function ChatContainer() {
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
+  // Subscribe to global messages when component mounts
   useEffect(() => {
-    getMessagesByUserId(selectedUser._id);
     subscribeToMessages();
 
-    // clean up
+    // Clean up on unmount
     return () => unsubscribeFromMessages();
-  }, [selectedUser, getMessagesByUserId, subscribeToMessages, unsubscribeFromMessages]);
+  }, []); // Empty dependency array - run once on mount
+
+  // Get messages when selected user changes
+  useEffect(() => {
+    if (selectedUser) {
+      getMessagesByUserId(selectedUser._id);
+    }
+  }, [selectedUser, getMessagesByUserId]);
 
   useEffect(() => {
     if (messageEndRef.current) {
@@ -38,42 +45,54 @@ function ChatContainer() {
       <div className="flex-1 px-6 overflow-y-auto py-8">
         {messages.length > 0 && !isMessagesLoading ? (
           <div className="max-w-3xl mx-auto space-y-6">
-            {messages.map((msg) => (
-              <div
-                key={msg._id}
-                className={`chat ${msg.senderId === authUser._id ? "chat-end" : "chat-start"}`}
-              >
+            {messages.map((msg) => {
+              const isSender = msg.senderId === authUser._id;
+              const senderName = isSender ? "You" : selectedUser.fullName;
+              const time = new Date(msg.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              });
+
+              return (
                 <div
-                  className={`chat-bubble relative ${
-                    msg.senderId === authUser._id
-                      ? "bg-cyan-600 text-white"
-                      : "bg-slate-800 text-slate-200"
-                  }`}
+                  key={msg._id}
+                  className={`flex flex-col ${isSender ? "items-end" : "items-start"}`}
                 >
-                  {msg.image && (
-                    <img src={msg.image} alt="Shared" className="rounded-lg h-48 object-cover" />
-                  )}
-                  {msg.text && <p className="mt-2">{msg.text}</p>}
-                  <p className="text-xs mt-1 opacity-75 flex items-center gap-1">
-                    {new Date(msg.createdAt).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-medium text-slate-300">{senderName}</span>
+                    <span className="text-xs text-slate-400">{time}</span>
+                  </div>
+                  <div
+                    className={`chat-bubble mt-1 relative ${
+                      isSender
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-800 text-slate-200"
+                    } p-3 rounded-lg max-w-xs`}
+                  >
+                    {msg.image && (
+                      <img src={msg.image} alt="Shared" className="rounded-lg h-48 object-cover" />
+                    )}
+                    {msg.text && <p>{msg.text}</p>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {/* 👇 scroll target */}
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
           <MessagesLoadingSkeleton />
-        ) : (
+        ) : selectedUser ? (
           <NoChatHistoryPlaceholder name={selectedUser.fullName} />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-slate-400">Select a conversation to start chatting</p>
+          </div>
         )}
       </div>
 
-      <MessageInput />
+      {selectedUser && <MessageInput />}
     </>
   );
 }

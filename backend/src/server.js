@@ -13,24 +13,34 @@ const __dirname = path.resolve();
 
 const PORT = ENV.PORT || 3000;
 
-app.use(express.json({ limit: "10mb" })); // req.body
+app.use(express.json({ limit: "10mb" }));
+
 const allowedOrigins = [
-  "https://advance-chat-app.netlify.app",
   "http://localhost:5173",
-  "https://advance-chat-application-9.onrender.com",  // 👈 Add this
+  "http://127.0.0.1:5173",
+  "https://advance-chat-app.netlify.app",
+  "https://advance-chat-application-9.onrender.com",
 ];
 
-
+// Enhanced CORS configuration
 app.use(cors({
   origin: function(origin, callback){
-    if(!origin) return callback(null, true); // Postman or server-side requests
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if(!origin) return callback(null, true);
+    
     if(!allowedOrigins.includes(origin)){
       return callback(new Error("CORS blocked"), false);
     }
     return callback(null, true);
   },
-  credentials: true, // ✅ allow cookies
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  optionsSuccessStatus: 200
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(cookieParser());
 
@@ -38,17 +48,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
 if (ENV.NODE_ENV === "production") {
-  // Serve static frontend files
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-  // Only serve index.html for routes NOT starting with /api
   app.get(/^\/(?!api).*/, (_, res) => {
     res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
   });
 }
-
-
-
 
 server.listen(PORT, () => {
   console.log("Server running on port: " + PORT);
