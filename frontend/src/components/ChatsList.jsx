@@ -46,7 +46,7 @@ function ChatsList() {
               <div className="flex-1">
                 <h4 className="text-slate-200 font-medium truncate">{chat.fullName}</h4>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-sm text-slate-300 truncate">
+                  <p className="text-sm text-slate-300 break-words whitespace-pre-line max-w-[180px]">
                     {lastMessage ? `${senderName}: ${messageText}` : messageText}
                   </p>
                 </div>
