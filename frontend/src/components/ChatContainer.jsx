@@ -49,12 +49,12 @@ function ChatContainer() {
           <div className="max-w-3xl mx-auto space-y-6">
             {(() => {
               let lastDate = null;
-              // Find the index of the first unread message (assuming messages have isRead and recipientId fields)
+              // Find the index of the first unread message (using read and receiverId fields)
               let firstUnreadIdx = messages.findIndex(
-                (msg) => !msg.isRead && msg.recipientId === authUser._id
+                (msg) => msg.read === false && msg.receiverId?.toString() === authUser._id
               );
               let unreadCount = messages.filter(
-                (msg) => !msg.isRead && msg.recipientId === authUser._id
+                (msg) => msg.read === false && msg.receiverId?.toString() === authUser._id
               ).length;
               return messages.map((msg, idx) => {
                 const isSender = msg.senderId === authUser._id;
