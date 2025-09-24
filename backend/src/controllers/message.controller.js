@@ -209,9 +209,11 @@ export const getChatPartners = async (req, res) => {
       { $unwind: "$partner" },
       {
         $project: {
-          "partner.password": 0,
-          lastMessage: 1,
-        },
+          partner: {
+            password: 0
+          },
+          lastMessage: 1
+        }
       },
       { $sort: { "lastMessage.createdAt": -1 } },
     ]);

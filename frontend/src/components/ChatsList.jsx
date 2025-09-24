@@ -24,7 +24,7 @@ function ChatsList() {
   const time = lastMessage ? formatChatDate(lastMessage.createdAt) : "";
         const messageText = lastMessage ? lastMessage.text || "Image" : "No recent message";
         const senderName = lastMessage && lastMessage.senderId === authUser._id ? "You" : chat.fullName;
-        const unreadCount = chat.unreadCount || 0;
+  const unreadCount = typeof chat.unreadCount === 'number' ? chat.unreadCount : 0;
 
         return (
           <div
@@ -47,10 +47,11 @@ function ChatsList() {
                   <p className="text-sm text-slate-300 truncate whitespace-nowrap max-w-[180px]">
                     {lastMessage ? `${senderName}: ${messageText}` : messageText}
                   </p>
-                  {/* Uncomment below for unread badge */}
-                  {/* {unreadCount > 0 && (
-                    <span className="ml-2 bg-green-500 text-white text-xs rounded-full px-2 py-0.5">{unreadCount}</span>
-                  )} */}
+                  {unreadCount > 0 && (
+                    <span className="ml-2 bg-green-500 text-white text-xs rounded-full px-2 min-w-[22px] h-[22px] flex items-center justify-center font-semibold shadow-md border-2 border-black/30">
+                      {unreadCount}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
