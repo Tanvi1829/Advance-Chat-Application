@@ -16,6 +16,7 @@ function ChatContainer() {
     isMessagesLoading,
     subscribeToMessages,
     unsubscribeFromMessages,
+    markMessagesAsRead, // Add this function to your store
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
@@ -34,6 +35,22 @@ function ChatContainer() {
       getMessagesByUserId(selectedUser._id);
     }
   }, [selectedUser, getMessagesByUserId]);
+
+    useEffect(() => {
+      if (selectedUser && messages.length > 0) {
+        // Mark all unread messages from the selected user as read
+        const unreadMessages = messages.filter(
+          (msg) =>
+            msg.read === false &&
+            msg.senderId?.toString() === selectedUser._id &&
+            msg.receiverId?.toString() === authUser._id
+        );
+        
+        if (unreadMessages.length > 0) {
+          markMessagesAsRead(selectedUser._id);
+        }
+      }
+    }, [selectedUser, messages, authUser._id, markMessagesAsRead]);
 
   useEffect(() => {
     if (messageEndRef.current) {
@@ -77,26 +94,27 @@ function ChatContainer() {
                   showDateSeparator = true;
                   lastDate = msgDateOnly;
                 }
-                return (
-                  <>
+               return (
+                  <div key={msg._id + '-container'}>
                     {showDateSeparator && (
-                      <div key={msg._id + '-date'} className="flex justify-center my-2">
-                        <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded shadow-sm border border-slate-300 opacity-90" style={{fontWeight: 500, letterSpacing: '0.5px'}}>
+                      <div className="flex justify-center my-2">
+                        <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded shadow-sm border border-slate-300 opacity-90" 
+                              style={{fontWeight: 500, letterSpacing: '0.5px'}}>
                           {getDateSeparatorLabel(msg.createdAt)}
                         </span>
                       </div>
                     )}
+                    
+                    {/* Show unread separator only before the first unread message from other person */}
                     {unreadCount > 0 && idx === firstUnreadIdx && (
-                      <div key={msg._id + '-unread'} className="flex justify-center my-2">
-                        <span className="bg-yellow-200 text-yellow-800 text-xs px-3 py-1 rounded-full shadow-sm border border-yellow-300 font-semibold opacity-95">
+                      <div className="flex justify-center my-3">
+                        <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full shadow-sm font-semibold opacity-95">
                           {unreadCount} unread message{unreadCount > 1 ? 's' : ''}
                         </span>
                       </div>
                     )}
-                    <div
-                      key={msg._id}
-                      className={`flex flex-col ${isSender ? "items-end" : "items-start"}`}
-                    >
+                    
+                    <div className={`flex flex-col ${isSender ? "items-end" : "items-start"}`}>
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm font-medium text-slate-300">{senderName}</span>
                         <span className="text-xs text-slate-400">{time}</span>
@@ -114,7 +132,7 @@ function ChatContainer() {
                         {msg.text && <p>{msg.text}</p>}
                       </div>
                     </div>
-                  </>
+                  </div>
                 );
               });
             })()}
