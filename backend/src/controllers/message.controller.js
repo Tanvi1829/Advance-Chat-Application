@@ -15,6 +15,7 @@ export const getAllContacts = async (req, res) => {
   }
 };
 
+// Returns all messages between logged-in user and userToChatId, with read and receiverId fields
 export const getMessagesByUserId = async (req, res) => {
   try {
     const myId = req.user._id;
@@ -25,9 +26,16 @@ export const getMessagesByUserId = async (req, res) => {
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    }).lean();
 
-    res.status(200).json(messages);
+    // Ensure each message has read and receiverId fields (for frontend logic)
+    const messagesWithRead = messages.map(msg => ({
+      ...msg,
+      read: msg.read,
+      receiverId: msg.receiverId,
+    }));
+
+    res.status(200).json(messagesWithRead);
   } catch (error) {
     console.log("Error in getMessages controller: ", error.message);
     res.status(500).json({ error: "Internal server error" });
@@ -166,6 +174,7 @@ export const sendMessage = async (req, res) => {
 // };
 
 
+// Returns all chat partners with last message and unreadCount for WhatsApp-style badge
 export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
@@ -198,16 +207,16 @@ export const getChatPartners = async (req, res) => {
         },
       },
       { $unwind: "$partner" },
-{
-  $project: {
-    "partner.password": 0,
-    "_id": 0
-  }
-},
+      {
+        $project: {
+          "partner.password": 0,
+          lastMessage: 1,
+        },
+      },
       { $sort: { "lastMessage.createdAt": -1 } },
     ]);
 
-    // Add try/catch inside map for better error reporting
+    // For each chat, count unread messages where receiver is logged-in user and read: false
     const chatPartners = await Promise.all(
       aggregation.map(async (item) => {
         try {
@@ -218,15 +227,24 @@ export const getChatPartners = async (req, res) => {
             ],
           }).sort({ createdAt: -1 });
 
+          // Count unread messages for this chat
+          const unreadCount = await Message.countDocuments({
+            senderId: item._id,
+            receiverId: loggedInUserId,
+            read: false,
+          });
+
           return {
             ...item.partner,
             lastMessage: latestMessage || item.lastMessage,
+            unreadCount,
           };
         } catch (err) {
-          console.error("Error fetching latest message for user:", item._id, err);
+          console.error("Error fetching latest message/unread for user:", item._id, err);
           return {
             ...item.partner,
             lastMessage: item.lastMessage || null,
+            unreadCount: 0,
           };
         }
       })
@@ -243,4 +261,4 @@ export const getChatPartners = async (req, res) => {
     console.error("Error in getChatPartners:", error);
     res.status(500).json({ error: "Internal server error", details: error.message });
   }
-}; 
+};

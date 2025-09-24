@@ -24,7 +24,7 @@ function ChatsList() {
   const time = lastMessage ? formatChatDate(lastMessage.createdAt) : "";
         const messageText = lastMessage ? lastMessage.text || "Image" : "No recent message";
         const senderName = lastMessage && lastMessage.senderId === authUser._id ? "You" : chat.fullName;
-        const unreadCount = chat.unreadCount || 0;
+  const unreadCount = typeof chat.unreadCount === 'number' ? chat.unreadCount : 0;
 
         return (
           <div
