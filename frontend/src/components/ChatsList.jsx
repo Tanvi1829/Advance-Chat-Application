@@ -43,15 +43,21 @@ function ChatsList() {
                   <img src={chat.profilePic || "/avatar.png"} alt={chat.fullName} />
                 </div>
               </div>
-              <div className="flex-1">
-                <h4 className="text-slate-200 font-medium truncate">{chat.fullName}</h4>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-sm text-slate-300 break-words whitespace-pre-line max-w-[180px]">
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-slate-200 font-medium truncate">{chat.fullName}</h4>
+                  {lastMessage && <span className="text-xs text-slate-400 ml-2">{time}</span>}
+                </div>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-slate-300 truncate whitespace-nowrap max-w-[180px]">
                     {lastMessage ? `${senderName}: ${messageText}` : messageText}
                   </p>
+                  {/* Uncomment below for unread badge */}
+                  {/* {unreadCount > 0 && (
+                    <span className="ml-2 bg-green-500 text-white text-xs rounded-full px-2 py-0.5">{unreadCount}</span>
+                  )} */}
                 </div>
               </div>
-                  {lastMessage && <span className="text-xs text-slate-400">{time}</span>}
             </div>
           </div>
         );
