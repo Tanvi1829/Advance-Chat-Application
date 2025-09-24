@@ -43,6 +43,26 @@ export const useChatStore = create((set, get) => ({
   },
 
 
+    markMessagesAsRead: async (userId, messageIds) => {
+    try {
+      const response = await fetch(`/api/messages/mark-read`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, messageIds }),
+      });
+      if (response.ok) {
+        set((state) => ({
+          messages: state.messages.map((msg) =>
+            messageIds.includes(msg._id) ? { ...msg, read: true } : msg
+          ),
+        }));
+      }
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  },
+
+
 getMyChatPartners: async () => {
     set({ isUsersLoading: true });
     try {
