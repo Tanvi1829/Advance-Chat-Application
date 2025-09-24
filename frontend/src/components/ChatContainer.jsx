@@ -68,7 +68,7 @@ function ChatContainer() {
                       isSender
                         ? "bg-cyan-600 text-white"
                         : "bg-slate-800 text-slate-200"
-                    } p-3 rounded-lg max-w-xs`}
+                    } p-3 rounded-lg max-w-xs break-words whitespace-pre-line`}
                   >
                     {msg.image && (
                       <img src={msg.image} alt="Shared" className="rounded-lg h-48 object-cover" />
