@@ -198,12 +198,12 @@ export const getChatPartners = async (req, res) => {
         },
       },
       { $unwind: "$partner" },
-      {
-        $project: {
-          "partner.password": 0,
-          lastMessage: 1,
-        },
-      },
+{
+  $project: {
+    "partner.password": 0,
+    "_id": 0
+  }
+},
       { $sort: { "lastMessage.createdAt": -1 } },
     ]);
 
@@ -243,4 +243,4 @@ export const getChatPartners = async (req, res) => {
     console.error("Error in getChatPartners:", error);
     res.status(500).json({ error: "Internal server error", details: error.message });
   }
-};
+}; 
