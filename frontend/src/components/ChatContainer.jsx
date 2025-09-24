@@ -49,6 +49,13 @@ function ChatContainer() {
           <div className="max-w-3xl mx-auto space-y-6">
             {(() => {
               let lastDate = null;
+              // Find the index of the first unread message (assuming messages have isRead and recipientId fields)
+              let firstUnreadIdx = messages.findIndex(
+                (msg) => !msg.isRead && msg.recipientId === authUser._id
+              );
+              let unreadCount = messages.filter(
+                (msg) => !msg.isRead && msg.recipientId === authUser._id
+              ).length;
               return messages.map((msg, idx) => {
                 const isSender = msg.senderId === authUser._id;
                 const senderName = isSender ? "You" : selectedUser.fullName;
@@ -68,6 +75,13 @@ function ChatContainer() {
                       <div key={msg._id + '-date'} className="flex justify-center my-2">
                         <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded shadow-sm border border-slate-300 opacity-90" style={{fontWeight: 500, letterSpacing: '0.5px'}}>
                           {getDateSeparatorLabel(msg.createdAt)}
+                        </span>
+                      </div>
+                    )}
+                    {unreadCount > 0 && idx === firstUnreadIdx && (
+                      <div key={msg._id + '-unread'} className="flex justify-center my-2">
+                        <span className="bg-yellow-200 text-yellow-800 text-xs px-3 py-1 rounded-full shadow-sm border border-yellow-300 font-semibold opacity-95">
+                          {unreadCount} unread message{unreadCount > 1 ? 's' : ''}
                         </span>
                       </div>
                     )}
