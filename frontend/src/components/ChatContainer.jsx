@@ -49,13 +49,21 @@ function ChatContainer() {
           <div className="max-w-3xl mx-auto space-y-6">
             {(() => {
               let lastDate = null;
-              // Find the index of the first unread message (using read and receiverId fields)
-              let firstUnreadIdx = messages.findIndex(
-                (msg) => msg.read === false && msg.receiverId?.toString() === authUser._id
+              // WhatsApp-style: Only show unread separator for messages RECEIVED by me and not sent by me
+              const unreadMessages = messages.filter(
+                (msg) =>
+                  msg.read === false &&
+                  msg.receiverId?.toString() === authUser._id &&
+                  msg.senderId?.toString() !== authUser._id
               );
-              let unreadCount = messages.filter(
-                (msg) => msg.read === false && msg.receiverId?.toString() === authUser._id
-              ).length;
+              let firstUnreadIdx = -1;
+              let unreadCount = 0;
+              if (unreadMessages.length > 0) {
+                // Find the index of the first unread message received from the other user
+                const firstUnreadMsgId = unreadMessages[0]._id;
+                firstUnreadIdx = messages.findIndex((msg) => msg._id === firstUnreadMsgId);
+                unreadCount = unreadMessages.length;
+              }
               return messages.map((msg, idx) => {
                 const isSender = msg.senderId === authUser._id;
                 const senderName = isSender ? "You" : selectedUser.fullName;
