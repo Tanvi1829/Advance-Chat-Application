@@ -1,9 +1,14 @@
 // src/components/ChatsList.jsx
+import { useChatStore } from "../store/useChatStore";
+import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
+import NoChatsFound from "./NoChatsFound";
+import { useAuthStore } from "../store/useAuthStore";
 import { useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
 import NoChatsFound from "./NoChatsFound";
 import { useAuthStore } from "../store/useAuthStore";
+import { formatChatDate } from "../lib/formatChatDate";
 
 function ChatsList() {
   const { getMyChatPartners, chats, isUsersLoading, setSelectedUser } = useChatStore();
@@ -20,13 +25,7 @@ function ChatsList() {
     <>
       {chats.map((chat) => {
         const lastMessage = chat.lastMessage;
-        const time = lastMessage
-          ? new Date(lastMessage.createdAt).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-          : "";
+  const time = lastMessage ? formatChatDate(lastMessage.createdAt) : "";
         const messageText = lastMessage ? lastMessage.text || "Image" : "No recent message";
         const senderName = lastMessage && lastMessage.senderId === authUser._id ? "You" : chat.fullName;
         const unreadCount = chat.unreadCount || 0;
