@@ -3,7 +3,6 @@ import {
   getAllContacts,
   getChatPartners,
   getMessagesByUserId,
-  markMessagesAsRead,
   sendMessage,
 } from "../controllers/message.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
@@ -19,6 +18,6 @@ router.get("/contacts", getAllContacts);
 router.get("/chats", getChatPartners);
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", sendMessage);
-router.put("/mark-read/:id", protectRoute, markMessagesAsRead);
+
 
 export default router;
