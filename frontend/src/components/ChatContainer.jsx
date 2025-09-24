@@ -52,7 +52,9 @@ function ChatContainer() {
               return messages.map((msg, idx) => {
                 const isSender = msg.senderId === authUser._id;
                 const senderName = isSender ? "You" : selectedUser.fullName;
-                const time = formatChatDate(msg.createdAt);
+                // Always show only the time next to each message
+                const date = new Date(msg.createdAt);
+                const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
                 const msgDate = new Date(msg.createdAt);
                 const msgDateOnly = new Date(msgDate.getFullYear(), msgDate.getMonth(), msgDate.getDate());
                 let showDateSeparator = false;
