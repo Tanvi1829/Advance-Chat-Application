@@ -124,13 +124,13 @@ function ChatContainer() {
                     )}
                     
                     {/* Show unread separator only before the first unread message from other person */}
-                    {unreadCount > 0 && idx === firstUnreadIdx && (
+                    {/* {unreadCount > 0 && idx === firstUnreadIdx && (
                       <div className="flex justify-center my-3">
                         <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full shadow-sm font-semibold opacity-95">
                           {unreadCount} unread message{unreadCount > 1 ? 's' : ''}
                         </span>
                       </div>
-                    )}
+                    )} */}
                     
                     <div className={`flex flex-col ${isSender ? "items-end" : "items-start"}`}>
                       <div className="flex items-baseline gap-2">
