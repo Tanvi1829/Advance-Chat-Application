@@ -8,11 +8,27 @@ import { formatChatDate } from "../lib/formatChatDate";
 
 function ChatsList() {
   const { getMyChatPartners, chats, isUsersLoading, setSelectedUser } = useChatStore();
-  const { onlineUsers, authUser } = useAuthStore();
+  const { onlineUsers, authUser, socket } = useAuthStore();
 
   useEffect(() => {
     getMyChatPartners();
   }, [getMyChatPartners]);
+
+    useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (newMessage) => {
+      console.log("📨 New message in ChatsList:", newMessage);
+      // This will trigger re-render because chats state will update
+      // The update happens in useChatStore's subscribeToMessages
+    };
+
+    socket.on("newMessage", handleNewMessage);
+
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+    };
+  }, [socket]);
 
   if (isUsersLoading) return <UsersLoadingSkeleton />;
   if (chats.length === 0) return <NoChatsFound />;
