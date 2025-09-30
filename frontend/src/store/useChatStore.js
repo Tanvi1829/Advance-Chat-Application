@@ -11,6 +11,7 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
+  unreadCounts: {},
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
 
   toggleSound: () => {
@@ -21,12 +22,11 @@ export const useChatStore = create((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedUser: (selectedUser) => set({ selectedUser }),
 
-
   sortChats: (chats) => {
     return chats.sort((a, b) => {
       const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
       const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-      return timeB - timeA; // latest on top
+      return timeB - timeA;
     });
   },
 
@@ -42,23 +42,19 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-
-getMyChatPartners: async () => {
+  getMyChatPartners: async () => {
     set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/chats");
       let chats = res.data;
       
-      // Additional verification: Get the actual latest message for each chat
       const updatedChats = await Promise.all(
         chats.map(async (chat) => {
           try {
-            // Get the absolute latest message for this chat
             const messagesRes = await axiosInstance.get(`/messages/${chat._id}`);
             const messages = messagesRes.data;
             const latestMessage = messages.length > 0 ? messages[messages.length - 1] : null;
             
-            // If we found a more recent message than what backend provided, use it
             if (latestMessage && (!chat.lastMessage || 
                 new Date(latestMessage.createdAt) > new Date(chat.lastMessage.createdAt))) {
               return { ...chat, lastMessage: latestMessage };
@@ -71,7 +67,6 @@ getMyChatPartners: async () => {
         })
       );
 
-      // Sort by latest message time
       const sortedChats = updatedChats.sort((a, b) => {
         const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
         const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
@@ -85,9 +80,7 @@ getMyChatPartners: async () => {
       set({ isUsersLoading: false });
     }
   },
-  
 
-  
   getMessagesByUserId: async (userId) => {
     set({ isMessagesLoading: true });
     try {
@@ -95,7 +88,6 @@ getMyChatPartners: async () => {
       const messages = res.data;
       set({ messages });
 
-      // Update chats with the latest message for the selected user
       set((state) => {
         const updatedChats = state.chats.map((chat) =>
           chat._id === userId
@@ -128,30 +120,25 @@ getMyChatPartners: async () => {
       image: messageData.image,
       createdAt: new Date().toISOString(),
       isOptimistic: true,
+      read: false, // Initially not read
     };
     set({ messages: [...messages, optimisticMessage] });
 
     try {
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
       
-      // Remove optimistic message and add real message
       const filteredMessages = messages.filter(msg => msg._id !== tempId);
       set({ messages: [...filteredMessages, res.data] });
 
-      // Update chats with the new message and resort
       set((state) => {
         const updatedChats = state.chats.map((chat) =>
           chat._id === selectedUser._id
-            ? {
-                ...chat,
-                lastMessage: res.data,
-              }
+            ? { ...chat, lastMessage: res.data }
             : chat
         );
         return { chats: get().sortChats(updatedChats) };
       });
     } catch (error) {
-      // Remove optimistic message on error
       set({ messages: messages.filter(msg => msg._id !== tempId) });
       toast.error(error.response?.data?.message || "Something went wrong");
     }
@@ -164,21 +151,15 @@ getMyChatPartners: async () => {
       const { selectedUser, isSoundEnabled } = get();
       const { authUser } = useAuthStore.getState();
       
-      // Check if this message involves the current user
       const isMessageForMe = newMessage.receiverId === authUser._id || newMessage.senderId === authUser._id;
       
       if (!isMessageForMe) return;
 
-      // Debug log for socket message
-      console.log("[Socket] newMessage received", newMessage, "selectedUser:", selectedUser);
-
-      // If the message is for the open chat (sender or receiver), add it to the current chat
       if (
         selectedUser &&
         (newMessage.senderId === selectedUser._id || newMessage.receiverId === selectedUser._id)
       ) {
         const currentMessages = get().messages;
-        // Prevent duplicate messages (by _id)
         if (!currentMessages.some(msg => msg._id === newMessage._id)) {
           set({ messages: [...currentMessages, newMessage] });
         }
@@ -190,7 +171,6 @@ getMyChatPartners: async () => {
         }
       }
 
-      // Always update the chat list for any message involving current user
       set((state) => {
         const chatPartnerId = newMessage.senderId === authUser._id ? newMessage.receiverId : newMessage.senderId;
         
@@ -200,7 +180,6 @@ getMyChatPartners: async () => {
             : chat
         );
 
-        // Sort by latest message time
         const sortedChats = updatedChats.sort((a, b) => {
           const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
           const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
@@ -210,10 +189,60 @@ getMyChatPartners: async () => {
         return { chats: sortedChats };
       });
     });
+
+    // Listen for read receipts
+    socket.on("messageRead", ({ messageIds, userId }) => {
+      console.log("📘 messageRead event received:", messageIds, userId);
+      
+      set((state) => {
+        const updatedMessages = state.messages.map((msg) =>
+          messageIds.includes(msg._id.toString()) ? { ...msg, read: true } : msg
+        );
+        
+        console.log("Updated messages with read status:", updatedMessages.filter(m => messageIds.includes(m._id.toString())));
+        
+        return { messages: updatedMessages };
+      });
+    });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     socket.off("newMessage");
+    socket.off("messageRead"); // ✅ Add this
   },
+
+  markMessagesAsRead: async (userId) => {
+    try {
+      console.log("🔍 Calling mark-as-read for userId:", userId);
+    console.log("🔍 Full URL:", `/messages/mark-as-read/${userId}`);
+      const res = await axiosInstance.post(`/messages/mark-as-read/${userId}`);
+      console.log("✅ markMessagesAsRead response:", res.data);
+
+      set((state) => {
+        const updatedMessages = state.messages.map((msg) =>
+          // msg.senderId === userId ? { ...msg, read: true } : msg
+          msg.senderId === userId && msg.read === false 
+          ? { ...msg, read: true } 
+          : msg
+        );
+        console.log("Updated messages after marking as read:", updatedMessages.filter(m => m.senderId === userId && m.read));
+        const updatedChats = state.chats.map((chat) =>
+          chat._id === userId ? { ...chat, unreadCount: 0 } : chat
+        );
+
+        return { messages: updatedMessages, chats: updatedChats };
+      });
+    } catch (error) {
+      console.error("❌ Error marking messages as read:", error);
+      console.error("❌ Error:", error.response?.status);
+    console.error("❌ URL tried:", error.config?.url);
+    console.error("❌ Method:", error.config?.method);
+    }
+  },
+
+  setUnreadCount: (receiverId, count) =>
+    set((state) => ({
+      unreadCounts: { ...state.unreadCounts, [receiverId]: count },
+    })),
 }));

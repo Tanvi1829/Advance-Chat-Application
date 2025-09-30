@@ -129,14 +129,28 @@ export const useAuthStore = create((set, get) => ({
     console.log("Creating socket connection to:", BASE_URL);
     console.log("For user:", authUser._id, authUser.fullName);
 
-    try {
+  const token = localStorage.getItem("token");
+
+
+    // try {
+      // const socketOptions = {
+      //   withCredentials: true,
+      //   timeout: 20000,
+      //   forceNew: true,
+      //   transports: ['websocket', 'polling'], // Include both transports
+      //   autoConnect: true,
+      // };
+
       const socketOptions = {
-        withCredentials: true,
-        timeout: 20000,
-        forceNew: true,
-        transports: ['websocket', 'polling'], // Include both transports
-        autoConnect: true,
-      };
+    withCredentials: true,
+    auth: {
+      token: token  // ✅ Token pass karo as auth
+    },
+    timeout: 20000,
+    forceNew: true,
+    transports: ['websocket', 'polling'],
+    autoConnect: true,
+  };
 
       const newSocket = io(BASE_URL, socketOptions);
 
@@ -178,9 +192,9 @@ export const useAuthStore = create((set, get) => ({
 
       set({ socket: newSocket });
       
-    } catch (error) {
-      console.error("Failed to create socket:", error);
-    }
+    // } catch (error) {
+    //   console.error("Failed to create socket:", error);
+    // }
   },
 
   disconnectSocket: () => {

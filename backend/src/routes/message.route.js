@@ -1,23 +1,62 @@
+// import express from "express";
+// import { protectRoute } from "../middleware/auth.middleware.js";
+// import {
+//   getAllContacts,
+//   getMessagesByUserId,
+//   sendMessage,
+//   getChatPartners,
+//   markMessagesAsRead
+// } from "../controllers/message.controller.js";
+
+// const router = express.Router();
+
+// router.get("/contacts", protectRoute, getAllContacts);
+// router.get("/chats", protectRoute, getChatPartners);
+
+// // ✅ CRITICAL: Specific routes BEFORE generic /:id
+// // router.post("/mark-as-read/:id", protectRoute, markMessagesAsRead);
+// router.post("/mark-as-read/:id", protectRoute, (req, res, next) => {
+//   console.log("✅ mark-as-read route hit! ID:", req.params.id);
+//   markMessagesAsRead(req, res, next);
+// });
+// router.post("/send/:id", protectRoute, sendMessage);
+
+// // ✅ Generic route at END
+// router.get("/:id", protectRoute, getMessagesByUserId);
+
+// export default router;
+
 import express from "express";
+import { protectRoute } from "../middleware/auth.middleware.js";
 import {
   getAllContacts,
-  getChatPartners,
   getMessagesByUserId,
   sendMessage,
+  getChatPartners,
+  markMessagesAsRead
 } from "../controllers/message.controller.js";
-import { protectRoute } from "../middleware/auth.middleware.js";
-import { arcjetProtection } from "../middleware/arcjet.middleware.js";
 
 const router = express.Router();
 
-// the middlewares execute in order - so requests get rate-limited first, then authenticated.
-// this is actually more efficient since unauthenticated requests get blocked by rate limiting before hitting the auth middleware.
-router.use(arcjetProtection, protectRoute);
+// Test log
+console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+console.log("📂 MESSAGE ROUTES LOADING...");
+console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-router.get("/contacts", getAllContacts);
-router.get("/chats", getChatPartners);
-router.get("/:id", getMessagesByUserId);
-router.post("/send/:id", sendMessage);
+router.get("/contacts", protectRoute, getAllContacts);
+router.get("/chats", protectRoute, getChatPartners);
 
+// Specific routes FIRST
+router.post("/mark-as-read/:id", protectRoute, (req, res, next) => {
+  console.log("✅ MARK AS READ HIT! Params:", req.params);
+  markMessagesAsRead(req, res, next);
+});
+
+router.post("/send/:id", protectRoute, sendMessage);
+
+// Generic route LAST
+router.get("/:id", protectRoute, getMessagesByUserId);
+
+console.log("✅ All message routes registered");
 
 export default router;

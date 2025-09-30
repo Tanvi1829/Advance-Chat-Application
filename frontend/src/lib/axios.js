@@ -1,7 +1,8 @@
 import axios from "axios";
 
 export const axiosInstance = axios.create({
-  baseURL: "https://advance-chat-application-8.onrender.com/api",
+  // baseURL: "https://advance-chat-application-8.onrender.com/api",
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3000/api",
   withCredentials: true,   // 👈 ye add karo agar cookie based auth hai
 });
 
@@ -11,5 +12,6 @@ axiosInstance.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log("📤 Request:", config.method.toUpperCase(), config.url);
   return config;
 });

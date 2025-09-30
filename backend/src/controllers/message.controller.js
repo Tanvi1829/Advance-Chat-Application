@@ -3,11 +3,11 @@ import { getReceiverSocketId, io } from "../lib/socket.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 
+// ✅ Get all contacts except self
 export const getAllContacts = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
     const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
-
     res.status(200).json(filteredUsers);
   } catch (error) {
     console.log("Error in getAllContacts:", error);
@@ -15,7 +15,7 @@ export const getAllContacts = async (req, res) => {
   }
 };
 
-// Returns all messages between logged-in user and userToChatId, with read and receiverId fields
+// ✅ Get all messages between two users
 export const getMessagesByUserId = async (req, res) => {
   try {
     const myId = req.user._id;
@@ -28,20 +28,14 @@ export const getMessagesByUserId = async (req, res) => {
       ],
     }).lean();
 
-    // Ensure each message has read and receiverId fields (for frontend logic)
-    const messagesWithRead = messages.map(msg => ({
-      ...msg,
-      read: msg.read,
-      receiverId: msg.receiverId,
-    }));
-
-    res.status(200).json(messagesWithRead);
+    res.status(200).json(messages);
   } catch (error) {
-    console.log("Error in getMessages controller: ", error.message);
+    console.log("Error in getMessagesByUserId:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
+// ✅ Send message
 export const sendMessage = async (req, res) => {
   try {
     const { text, image } = req.body;
@@ -54,6 +48,7 @@ export const sendMessage = async (req, res) => {
     if (senderId.equals(receiverId)) {
       return res.status(400).json({ message: "Cannot send messages to yourself." });
     }
+
     const receiverExists = await User.exists({ _id: receiverId });
     if (!receiverExists) {
       return res.status(404).json({ message: "Receiver not found." });
@@ -61,7 +56,6 @@ export const sendMessage = async (req, res) => {
 
     let imageUrl;
     if (image) {
-      // upload base64 image to cloudinary
       const uploadResponse = await cloudinary.uploader.upload(image);
       imageUrl = uploadResponse.secure_url;
     }
@@ -71,6 +65,7 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text,
       image: imageUrl,
+      read: false,
     });
 
     await newMessage.save();
@@ -81,100 +76,18 @@ export const sendMessage = async (req, res) => {
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
-    // Also emit to sender (for multi-tab/devices or instant update)
     if (senderSocketId && senderSocketId !== receiverSocketId) {
       io.to(senderSocketId).emit("newMessage", newMessage);
     }
 
     res.status(201).json(newMessage);
   } catch (error) {
-    console.log("Error in sendMessage controller: ", error.message);
+    console.log("Error in sendMessage:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// export const getChatPartners = async (req, res) => {
-//   try {
-//     const loggedInUserId = req.user._id;
-
-//     // Use aggregation to find chat partners and their latest message
-//     const aggregation = await Message.aggregate([
-//       {
-//         $match: {
-//           $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
-//         },
-//       },
-//       {
-//         $sort: { createdAt: -1 }, // Sort messages by newest first
-//       },
-//       {
-//         $group: {
-//           _id: {
-//             $cond: [
-//               { $eq: ["$senderId", loggedInUserId] },
-//               "$receiverId",
-//               "$senderId",
-//             ],
-//           },
-//           lastMessage: { $first: "$$ROOT" }, // Get the whole latest message doc
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "users",
-//           localField: "_id",
-//           foreignField: "_id",
-//           as: "partner",
-//         },
-//       },
-//       {
-//         $unwind: "$partner",
-//       },
-//       {
-//         $project: {
-//           "partner.password": 0, // Exclude password
-//           lastMessage: 1,
-//         },
-//       },
-//       {
-//         $sort: { "lastMessage.createdAt": -1 }, // Sort chats by latest message time
-//       },
-//     ]);
-
-//     // Return both partner and lastMessage for each chat
-// const chatPartners = await Promise.all(
-//       aggregation.map(async (item) => {
-//         // Double-check by getting the actual latest message
-//         const latestMessage = await Message.findOne({
-//           $or: [
-//             { senderId: loggedInUserId, receiverId: item._id },
-//             { senderId: item._id, receiverId: loggedInUserId },
-//           ],
-//         }).sort({ createdAt: -1 });
-
-//         return {
-//           ...item.partner,
-//           lastMessage: latestMessage || item.lastMessage,
-//         };
-//       })
-//     );
-
-//     // Sort one more time by the actual latest message
-//     chatPartners.sort((a, b) => {
-//       const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
-//       const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-//       return timeB - timeA;
-//     });
-
-//     res.status(200).json(chatPartners);
-//   } catch (error) {
-//     console.error("Error in getChatPartners: ", error.message);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// };
-
-
-// Returns all chat partners with last message and unreadCount for WhatsApp-style badge
+// ✅ Get chat partners with last message + unread count
 export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
@@ -207,66 +120,63 @@ export const getChatPartners = async (req, res) => {
         },
       },
       { $unwind: "$partner" },
-      // {
-      //   $project: {
-      //     partner: {
-      //       password: 0
-      //     },
-      //     lastMessage: 1
-      //   }
-      // },
-      {
-  $project: {
-    "partner.password": 0,
-    "_id": 0
-  }
-},
+      { $project: { "partner.password": 0 } },
       { $sort: { "lastMessage.createdAt": -1 } },
     ]);
 
-    // For each chat, count unread messages where receiver is logged-in user and read: false
     const chatPartners = await Promise.all(
       aggregation.map(async (item) => {
-        try {
-          const latestMessage = await Message.findOne({
-            $or: [
-              { senderId: loggedInUserId, receiverId: item._id },
-              { senderId: item._id, receiverId: loggedInUserId },
-            ],
-          }).sort({ createdAt: -1 });
+        const unreadCount = await Message.countDocuments({
+          senderId: item._id,
+          receiverId: loggedInUserId,
+          read: false,
+        });
 
-          // Count unread messages for this chat
-          const unreadCount = await Message.countDocuments({
-            senderId: item._id,
-            receiverId: loggedInUserId,
-            read: false,
-          });
-
-          return {
-            ...item.partner,
-            lastMessage: latestMessage || item.lastMessage,
-            unreadCount,
-          };
-        } catch (err) {
-          console.error("Error fetching latest message/unread for user:", item._id, err);
-          return {
-            ...item.partner,
-            lastMessage: item.lastMessage || null,
-            unreadCount: 0,
-          };
-        }
+        return {
+          ...item.partner,
+          lastMessage: item.lastMessage,
+          unreadCount,
+        };
       })
     );
 
-    chatPartners.sort((a, b) => {
-      const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
-      const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-      return timeB - timeA;
-    });
-
     res.status(200).json(chatPartners);
   } catch (error) {
-    console.error("Error in getChatPartners:", error);
-    res.status(500).json({ error: "Internal server error", details: error.message });
+    console.error("Error in getChatPartners:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// ✅ Mark messages as read
+export const markMessagesAsRead = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const { id: userId } = req.params;
+
+    const unreadMessages = await Message.find({
+      senderId: userId,
+      receiverId: myId,
+      read: false,
+    }).select("_id");
+
+    const messageIds = unreadMessages.map((msg) => msg._id.toString());
+
+    await Message.updateMany(
+      { senderId: userId, receiverId: myId, read: false },
+      { $set: { read: true } }
+    );
+
+    const senderSocketId = getReceiverSocketId(userId);
+    if (senderSocketId && messageIds.length > 0) {
+      io.to(senderSocketId).emit("messageRead", {
+        messageIds,
+        userId: myId.toString(),
+      });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error in markMessagesAsRead:", error.message);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
