@@ -68,21 +68,43 @@ function ChatContainer() {
     // Only show ticks for messages sent by current user
     if (!isSender) return null;
 
-    if (msg.read) {
-      // Double blue tick - Message read
-      return (
-        <div className="flex items-center gap-0.5 ml-1">
-          <CheckCheck className="w-4 h-4 text-blue-500" />
-        </div>
-      );
-    } else {
-      // Double grey tick - Message delivered but not read
-      return (
-        <div className="flex items-center gap-0.5 ml-1">
-          <CheckCheck className="w-4 h-4 text-slate-400" />
-        </div>
-      );
-    }
+    
+  const receiverUserId = msg.receiverId;
+  const { isUserOnline } = useAuthStore.getState();
+  const isReceiverOnline = isUserOnline(receiverUserId);
+
+    // if (msg.read) {
+    //   // Double blue tick - Message read
+    //   return (
+    //     <div className="flex items-center gap-0.5 ml-1">
+    //       <CheckCheck className="w-4 h-4 text-white" />
+    //     </div>
+    //   );
+    // } else {
+    //   // Double grey tick - Message delivered but not read
+    //   return (
+    //     <div className="flex items-center gap-0.5 ml-1">
+    //       <CheckCheck className="w-4 h-4 text-slate-400" />
+    //     </div>
+    //   );
+    // }
+
+      if (msg.read) {
+    // Blue double tick - Message read
+    return (
+      <CheckCheck className="w-4 h-4 text-white" />
+    );
+  } else if (isReceiverOnline) {
+    // Grey double tick - Delivered (receiver online but not read)
+    return (
+      <CheckCheck className="w-4 h-4 text-slate-700" />
+    );
+  } else {
+    // Single grey tick - Sent but not delivered (receiver offline)
+    return (
+      <Check className="w-4 h-4 text-slate-700" />
+    );
+  }
   };
 
   return (
