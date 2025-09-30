@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { formatChatDate } from "../lib/formatChatDate";
 
 function ChatsList() {
-  const { getMyChatPartners, chats, isUsersLoading, setSelectedUser } = useChatStore();
+  const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, typingUsers } = useChatStore();
   const { onlineUsers, authUser, socket } = useAuthStore();
 
   useEffect(() => {
@@ -41,6 +41,7 @@ function ChatsList() {
         const messageText = lastMessage ? lastMessage.text || "Image" : "No recent message";
         const senderName = lastMessage && lastMessage.senderId === authUser._id ? "You" : chat.fullName;
   const unreadCount = typeof chat.unreadCount === 'number' ? chat.unreadCount : 0;
+          const isTyping = typingUsers[chat._id] === true; // NEW: Check if user is typing
 
         return (
           <div
@@ -60,9 +61,24 @@ function ChatsList() {
                   {lastMessage && <span className="text-xs text-slate-400 ml-2">{time}</span>}
                 </div>
                 <div className="flex justify-between items-center">
-                  <p className="text-sm text-slate-300 truncate whitespace-nowrap max-w-[180px]">
+                  {/* <p className="text-sm text-slate-300 truncate whitespace-nowrap max-w-[180px]">
                     {lastMessage ? `${senderName}: ${messageText}` : messageText}
-                  </p>
+                  </p> */}
+                  {/* NEW: Show typing indicator */}
+                  {isTyping ? (
+                    <p className="text-sm text-cyan-400 italic flex items-center gap-1">
+                      <span className="animate-pulse">typing</span>
+                      <span className="flex gap-0.5">
+                        <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                        <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                        <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-slate-300 truncate whitespace-nowrap max-w-[180px]">
+                      {lastMessage ? `${senderName}: ${messageText}` : messageText}
+                    </p>
+                  )}
                   {unreadCount > 0 && (
                     <span className="ml-2 bg-green-500 text-white text-xs rounded-full px-2 min-w-[22px] h-[22px] flex items-center justify-center font-semibold shadow-md border-2 border-black/30">
                       {unreadCount}
