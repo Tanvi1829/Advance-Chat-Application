@@ -24,14 +24,14 @@ function ChatContainer() {
   const messageEndRef = useRef(null);
 
   useEffect(() => {
-    subscribeToMessages();
+    // subscribeToMessages();
 
     if (selectedUser) {
       getMessagesByUserId(selectedUser._id);
     }
 
-    return () => unsubscribeFromMessages();
-  }, [selectedUser]);
+    // return () => unsubscribeFromMessages();
+  }, [selectedUser, getMessagesByUserId]);
 
   useEffect(() => {
     if (messageEndRef.current) {
@@ -54,13 +54,13 @@ function ChatContainer() {
         // Delay marking as read to allow user to see the badge
         const timer = setTimeout(() => {
           markMessagesAsRead(selectedUser._id);
-          setUnreadCount(selectedUser._id, 0);
+          // setUnreadCount(selectedUser._id, 0);
         }, 1000);
         
         return () => clearTimeout(timer);
       }
     }
-  }, [selectedUser?._id, messages.length]);
+  }, [selectedUser?._id, messages.length, authUser._id, markMessagesAsRead]);
 
     const renderReadReceipt = (msg) => {
     const isSender = msg.senderId === authUser._id;

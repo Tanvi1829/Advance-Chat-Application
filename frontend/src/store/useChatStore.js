@@ -147,6 +147,11 @@ export const useChatStore = create((set, get) => ({
   subscribeToMessages: () => {
     const socket = useAuthStore.getState().socket;
     
+      if (!socket) {
+    console.log("No socket connection");
+    return;
+  }
+
     socket.on("newMessage", (newMessage) => {
       const { selectedUser, isSoundEnabled } = get();
       const { authUser } = useAuthStore.getState();
@@ -174,18 +179,59 @@ export const useChatStore = create((set, get) => ({
       set((state) => {
         const chatPartnerId = newMessage.senderId === authUser._id ? newMessage.receiverId : newMessage.senderId;
         
-        const updatedChats = state.chats.map((chat) =>
-          chat._id === chatPartnerId
-            ? { ...chat, lastMessage: newMessage }
-            : chat
-        );
+        // const updatedChats = state.chats.map((chat) =>
+        //   chat._id === chatPartnerId
+        //     ? { ...chat, lastMessage: newMessage }
+        //     : chat
+        // );
 
-        const sortedChats = updatedChats.sort((a, b) => {
-          const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
-          const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
-          return timeB - timeA;
-        });
+        // const sortedChats = updatedChats.sort((a, b) => {
+        //   const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+        //   const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+        //   return timeB - timeA;
+        // });
 
+              let updatedChats = [...state.chats];
+      const existingChatIndex = updatedChats.findIndex(
+        chat => chat._id === chatPartnerId
+      );
+
+      if (existingChatIndex !== -1) {
+        // Update existing chat
+        updatedChats[existingChatIndex] = {
+          ...updatedChats[existingChatIndex],
+          lastMessage: newMessage,
+          unreadCount: 
+            newMessage.senderId === chatPartnerId && 
+            selectedUser?._id !== chatPartnerId
+              ? (updatedChats[existingChatIndex].unreadCount || 0) + 1
+              : updatedChats[existingChatIndex].unreadCount || 0
+        };
+      } else {
+        // ✅ New chat partner - fetch their details and add to list
+        axiosInstance.get(`/auth/user/${chatPartnerId}`)
+          .then(res => {
+            set((state) => ({
+              chats: [{
+                ...res.data,
+                lastMessage: newMessage,
+                unreadCount: newMessage.senderId === chatPartnerId ? 1 : 0
+              }, ...state.chats]
+            }));
+          })
+          .catch(err => console.error("Failed to fetch user:", err));
+      }
+
+      // Sort by latest message
+      updatedChats.sort((a, b) => {
+        const timeA = a.lastMessage?.createdAt 
+          ? new Date(a.lastMessage.createdAt).getTime() 
+          : 0;
+        const timeB = b.lastMessage?.createdAt 
+          ? new Date(b.lastMessage.createdAt).getTime() 
+          : 0;
+        return timeB - timeA;
+      });
         return { chats: sortedChats };
       });
     });
