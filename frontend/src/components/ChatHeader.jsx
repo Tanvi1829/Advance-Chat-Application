@@ -4,9 +4,10 @@ import { useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 
 function ChatHeader() {
-  const { selectedUser, setSelectedUser } = useChatStore();
+  const { selectedUser, setSelectedUser, typingUsers } = useChatStore();
   const { onlineUsers } = useAuthStore();
   const isOnline = onlineUsers.includes(selectedUser._id);
+    const isTyping = typingUsers[selectedUser._id] === true; // NEW: Check if user is typing
 
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -33,7 +34,19 @@ function ChatHeader() {
 
         <div>
           <h3 className="text-slate-200 font-medium">{selectedUser.fullName}</h3>
-          <p className="text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p>
+          {/* <p className="text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p> */}
+          {isTyping ? (
+            <p className="text-cyan-400 text-sm italic flex items-center gap-1">
+              <span>typing</span>
+              <span className="flex gap-0.5">
+                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </span>
+            </p>
+          ) : (
+            <p className="text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p>
+          )}
         </div>
       </div>
 

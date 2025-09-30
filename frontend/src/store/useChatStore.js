@@ -13,6 +13,7 @@ export const useChatStore = create((set, get) => ({
   isMessagesLoading: false,
   unreadCounts: {},
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
+  typingUsers: {}, // NEW: Track typing users
 
   toggleSound: () => {
     localStorage.setItem("isSoundEnabled", !get().isSoundEnabled);
@@ -29,6 +30,14 @@ export const useChatStore = create((set, get) => ({
       return timeB - timeA;
     });
   },
+
+    // NEW: Emit typing status
+    emitTyping: (receiverId, isTyping) => {
+      const socket = useAuthStore.getState().socket;
+      if (!socket) return;
+      
+      socket.emit("typing", { receiverId, isTyping });
+    },
 
   getAllContacts: async () => {
     set({ isUsersLoading: true });
@@ -234,6 +243,17 @@ export const useChatStore = create((set, get) => ({
       });
         return { chats: sortedChats };
       });
+    });
+
+        socket.on("userTyping", ({ userId, isTyping }) => {
+      console.log(`User ${userId} typing status:`, isTyping);
+      
+      set((state) => ({
+        typingUsers: {
+          ...state.typingUsers,
+          [userId]: isTyping
+        }
+      }));
     });
 
     // Listen for read receipts

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useKeyboardSound from "../hooks/useKeyboardSound";
 import { useChatStore } from "../store/useChatStore";
 import toast from "react-hot-toast";
@@ -8,10 +8,48 @@ function MessageInput() {
   const { playRandomKeyStrokeSound } = useKeyboardSound();
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const typingTimeoutRef = useRef(null); // NEW
+
 
   const fileInputRef = useRef(null);
 
-  const { sendMessage, isSoundEnabled } = useChatStore();
+  const { sendMessage, isSoundEnabled,  selectedUser, emitTyping } = useChatStore();
+
+
+    const handleTyping = (value) => {
+    setText(value);
+    if (isSoundEnabled) playRandomKeyStrokeSound();
+
+    // Emit typing = true
+    if (selectedUser) {
+      emitTyping(selectedUser._id, true);
+    }
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set typing = false after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      if (selectedUser) {
+        emitTyping(selectedUser._id, false);
+      }
+    }, 2000);
+  };
+
+
+    useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (selectedUser) {
+        emitTyping(selectedUser._id, false);
+      }
+    };
+  }, [selectedUser, emitTyping]);
+
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -69,10 +107,11 @@ function MessageInput() {
         <input
           type="text"
           value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            isSoundEnabled && playRandomKeyStrokeSound();
-          }}
+          // onChange={(e) => {
+          //   setText(e.target.value);
+          //   isSoundEnabled && playRandomKeyStrokeSound();
+          // }}
+          onChange={(e) => handleTyping(e.target.value)}
           className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4"
           placeholder="Type your message..."
         />
