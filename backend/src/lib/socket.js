@@ -9,7 +9,10 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ["https://advance-chat-application-9.onrender.com"], // frontend domain
+    origin: [
+      "https://advance-chat-application-9.onrender.com",
+       "http://localhost:5173",
+    ], // frontend domain
     methods: ["GET", "POST"],
     credentials: true, // ✅ send cookies
   },

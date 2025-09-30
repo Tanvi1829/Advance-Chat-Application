@@ -17,7 +17,7 @@ app.use(express.json({ limit: "10mb" }));
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://127.0.0.1:5173",
+  // "http://127.0.0.1:5173",
   "https://advance-chat-app.netlify.app",
   "https://advance-chat-application-9.onrender.com",
 ];
