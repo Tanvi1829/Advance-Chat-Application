@@ -18,9 +18,10 @@ function ChatContainer() {
     subscribeToMessages,
     unsubscribeFromMessages,
     markMessagesAsRead,
-    setUnreadCount
+    setUnreadCount,
+    chats,
   } = useChatStore();
-  const { authUser } = useAuthStore();
+  const { authUser, socket } = useAuthStore();
   const messageEndRef = useRef(null);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ function ChatContainer() {
     }
 
     // return () => unsubscribeFromMessages();
-  }, [selectedUser, getMessagesByUserId]);
+  }, [selectedUser, getMessagesByUserId, socket]);
 
   useEffect(() => {
     if (messageEndRef.current) {
@@ -106,6 +107,10 @@ function ChatContainer() {
     );
   }
   };
+
+    const isTyping = selectedUser
+    ? chats.find((chat) => chat._id === selectedUser._id)?.isTyping || false
+    : false;
 
   return (
     <>
@@ -206,6 +211,18 @@ function ChatContainer() {
                 );
               });
             })()}
+               {isTyping && (
+              <div className="flex items-start">
+                <div className="chat-bubble bg-slate-800 text-slate-200 p-3 rounded-lg max-w-xs">
+                  <div className="flex space-x-2">
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></span>
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></span>
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></span>
+                  </div>
+                  <span className="text-xs text-gray-400">typing...</span>
+                </div>
+              </div>
+            )}
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
