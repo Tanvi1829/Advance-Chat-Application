@@ -228,8 +228,7 @@ function ChatContainer() {
               //     {/* <span className="text-xs text-gray-400">typing...</span> */}
               //   </div>
               // </div>
-              <p className="text-cyan-400 text-sm italic flex items-center gap-1">
-              <span>typing</span>
+              <p className="inline-flex items-center gap-1 bg-cyan-500/10 rounded-full px-4 py-2">
               <span className="flex gap-0.5">
                 <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                 <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
