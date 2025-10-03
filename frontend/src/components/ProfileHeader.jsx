@@ -1,16 +1,20 @@
 import { useState, useRef } from "react";
-import { LogOutIcon, VolumeOffIcon, Volume2Icon } from "lucide-react";
+import { LogOutIcon, VolumeOffIcon, Volume2Icon, Sun, MoreVertical } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
+
 
 const mouseClickSound = new Audio("/sounds/mouse-click.mp3");
 
 function ProfileHeader() {
   const { logout, authUser, updateProfile } = useAuthStore();
   const { isSoundEnabled, toggleSound } = useChatStore();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
 
   const fileInputRef = useRef(null);
+  const menuRef = useRef(null);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -66,8 +70,8 @@ function ProfileHeader() {
         </div>
 
         {/* BUTTONS */}
-        <div className="flex gap-4 items-center">
-          {/* LOGOUT BTN */}
+        {/* <div className="flex gap-4 items-center">
+          LOGOUT BTN
           <button
             className="text-slate-400 hover:text-slate-200 transition-colors"
             onClick={logout}
@@ -75,7 +79,7 @@ function ProfileHeader() {
             <LogOutIcon className="size-5" />
           </button>
 
-          {/* SOUND TOGGLE BTN */}
+          SOUND TOGGLE BTN
           <button
             className="text-slate-400 hover:text-slate-200 transition-colors"
             onClick={() => {
@@ -91,6 +95,63 @@ function ProfileHeader() {
               <VolumeOffIcon className="size-5" />
             )}
           </button>
+
+          <button>
+            <Sun className="size-5 text-slate-400 hover:text-slate-200 transition-colors" />
+          </button>
+        </div> */}
+
+   <div className="relative" ref={menuRef}>
+          <button
+            className="text-slate-400 hover:text-slate-200 transition-colors p-1"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            <MoreVertical className="size-5" />
+          </button>
+
+          {isMenuOpen && (
+            <div className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-lg bg-slate-800 border border-slate-700 shadow-xl animate-in fade-in zoom-in-95 duration-100">
+              <div className="py-1">
+                <button
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700/50 transition-colors"
+                  onClick={() => {
+                    mouseClickSound.currentTime = 0;
+                    mouseClickSound.play().catch((error) => console.log("Audio play failed:", error));
+                    toggleSound();
+                    setIsMenuOpen(true);
+                  }}
+                >
+                  {isSoundEnabled ? (
+                    <Volume2Icon className="size-5" />
+                  ) : (
+                    <VolumeOffIcon className="size-5" />
+                  )}
+                  <span>{isSoundEnabled ? 'Sound On' : 'Sound Off'}</span>
+                </button>
+
+                <button
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700/50 transition-colors"
+                  onClick={() => setIsMenuOpen(true)}
+                >
+                  <Sun className="size-5" />
+                  <span>Theme</span>
+                </button>
+
+                <div className="border-t border-slate-700 my-1"></div>
+
+                <button
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-900/20 transition-colors"
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  <LogOutIcon className="size-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
