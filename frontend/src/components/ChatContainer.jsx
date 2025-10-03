@@ -114,7 +114,7 @@ function ChatContainer() {
     // ? chats.find((chat) => chat._id === selectedUser._id)?.isTyping || false
     // : false;
 
-        const isTyping = typingUsers[selectedUser._id] === true; // NEW: Check if user is typing
+        const isTyping = typingUsers[selectedUser._id] === false; // NEW: Check if user is typing
 
   return (
     <>
