@@ -13,19 +13,34 @@ function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
   const {theme} = useChatStore();
 
+  // useEffect(() => {
+  //   checkAuth();
+  // }, [checkAuth]);
+
+  // if (isCheckingAuth) return <PageLoader />;
+
+  //   useEffect(() => {
+  //   if (theme === "dark") {
+  //     document.documentElement.classList.add("dark");
+  //   } else {
+  //     document.documentElement.classList.remove("dark");
+  //   }
+  // }, [theme]);
+
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  if (isCheckingAuth) return <PageLoader />;
-
-    useEffect(() => {
+  // Move this useEffect to the top level with other hooks
+  useEffect(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
   }, [theme]);
+
+  if (isCheckingAuth) return <PageLoader />;
 
   return (
     <div className="min-h-screen bg-slate-900 relative flex items-center justify-center p-4 overflow-hidden">
