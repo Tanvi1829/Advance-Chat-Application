@@ -215,27 +215,15 @@ function ChatContainer() {
                 );
               });
             })()}
-               {isTyping && (
-              // <div className="flex items-start">
-              //   <div className="chat-bubble bg-slate-800 text-slate-200 p-3 rounded-lg max-w-xs">
-              //     <div className="flex space-x-2">
-              //       <span className="flex gap-0.5">
-              //   <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-              //   <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-              //   <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-              // </span>
-              //     </div>
-              //     {/* <span className="text-xs text-gray-400">typing...</span> */}
-              //   </div>
-              // </div>
-              <p className="inline-flex items-center gap-1 bg-cyan-500/10 rounded-full px-4 py-2">
-              <span className="flex gap-0.5">
-                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-              </span>
-            </p>
-            )}
+              {isTyping && (
+  <div className="flex items-start">
+    <div className="inline-flex items-center gap-1.5 bg-slate-800 rounded-2xl px-4 py-3">
+      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+    </div>
+  </div>
+)}
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
