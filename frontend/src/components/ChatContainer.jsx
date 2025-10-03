@@ -114,7 +114,7 @@ function ChatContainer() {
     // ? chats.find((chat) => chat._id === selectedUser._id)?.isTyping || false
     // : false;
 
-        const isTyping = typingUsers[selectedUser._id] === false; // NEW: Check if user is typing
+        const isTyping = typingUsers[selectedUser._id] === true; // NEW: Check if user is typing
 
   return (
     <>
@@ -217,7 +217,7 @@ function ChatContainer() {
             })()}
               {isTyping && (
   <div className="flex items-start">
-    <div className="inline-flex items-center gap-1.5 bg-slate-800 rounded-2xl px-4 py-4">
+    <div className="inline-flex items-center gap-1.5 bg-slate-800 rounded-2xl px-4 py-4" style={{ marginTop: '2rem' }}>
       <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
       <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
       <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
