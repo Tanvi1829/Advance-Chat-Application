@@ -215,11 +215,13 @@ function ChatContainer() {
               <div className="flex items-start">
                 <div className="chat-bubble bg-slate-800 text-slate-200 p-3 rounded-lg max-w-xs">
                   <div className="flex space-x-2">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></span>
+                    <span className="flex gap-0.5">
+                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </span>
                   </div>
-                  <span className="text-xs text-gray-400">typing...</span>
+                  {/* <span className="text-xs text-gray-400">typing...</span> */}
                 </div>
               </div>
             )}
