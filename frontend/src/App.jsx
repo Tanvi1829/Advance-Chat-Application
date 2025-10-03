@@ -7,15 +7,25 @@ import { useEffect } from "react";
 import PageLoader from "./components/PageLoader";
 
 import { Toaster } from "react-hot-toast";
+import { useChatStore } from "./store/useChatStore";
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
+  const {theme} = useChatStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   if (isCheckingAuth) return <PageLoader />;
+
+    useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   return (
     <div className="min-h-screen bg-slate-900 relative flex items-center justify-center p-4 overflow-hidden">

@@ -9,7 +9,7 @@ const mouseClickSound = new Audio("/sounds/mouse-click.mp3");
 
 function ProfileHeader() {
   const { logout, authUser, updateProfile } = useAuthStore();
-  const { isSoundEnabled, toggleSound } = useChatStore();
+  const { isSoundEnabled, toggleSound, theme, toggleTheme } = useChatStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
 
@@ -29,6 +29,17 @@ function ProfileHeader() {
       await updateProfile({ profilePic: base64Image });
     };
   };
+
+    useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className="p-6 border-b border-slate-700/50">
@@ -129,12 +140,26 @@ function ProfileHeader() {
                   <span>{isSoundEnabled ? 'Sound On' : 'Sound Off'}</span>
                 </button>
 
-                <button
+                {/* <button
                   className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700/50 transition-colors"
                   onClick={() => setIsMenuOpen(true)}
                 >
                   <Sun className="size-5" />
                   <span>Theme</span>
+                </button> */}
+                 <button
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700/50 transition-colors"
+                  onClick={() => {
+                    toggleTheme();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="size-5" />
+                  ) : (
+                    <Moon className="size-5" />
+                  )}
+                  <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
                 </button>
 
                 <div className="border-t border-slate-700 my-1"></div>
