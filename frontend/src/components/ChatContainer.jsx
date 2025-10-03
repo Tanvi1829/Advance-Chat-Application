@@ -12,6 +12,8 @@ import { Check, CheckCheck } from "lucide-react";
 function ChatContainer() {
   const {
     selectedUser,
+    setSelectedUser, 
+    typingUsers,
     getMessagesByUserId,
     messages,
     isMessagesLoading,
@@ -108,9 +110,11 @@ function ChatContainer() {
   }
   };
 
-    const isTyping = selectedUser
-    ? chats.find((chat) => chat._id === selectedUser._id)?.isTyping || false
-    : false;
+    // const isTyping = selectedUser
+    // ? chats.find((chat) => chat._id === selectedUser._id)?.isTyping || false
+    // : false;
+
+        const isTyping = typingUsers[selectedUser._id] === true; // NEW: Check if user is typing
 
   return (
     <>
@@ -212,18 +216,26 @@ function ChatContainer() {
               });
             })()}
                {isTyping && (
-              <div className="flex items-start">
-                <div className="chat-bubble bg-slate-800 text-slate-200 p-3 rounded-lg max-w-xs">
-                  <div className="flex space-x-2">
-                    <span className="flex gap-0.5">
+              // <div className="flex items-start">
+              //   <div className="chat-bubble bg-slate-800 text-slate-200 p-3 rounded-lg max-w-xs">
+              //     <div className="flex space-x-2">
+              //       <span className="flex gap-0.5">
+              //   <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              //   <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              //   <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              // </span>
+              //     </div>
+              //     {/* <span className="text-xs text-gray-400">typing...</span> */}
+              //   </div>
+              // </div>
+              <p className="text-cyan-400 text-sm italic flex items-center gap-1">
+              <span>typing</span>
+              <span className="flex gap-0.5">
                 <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                 <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
                 <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
               </span>
-                  </div>
-                  {/* <span className="text-xs text-gray-400">typing...</span> */}
-                </div>
-              </div>
+            </p>
             )}
             <div ref={messageEndRef} />
           </div>
