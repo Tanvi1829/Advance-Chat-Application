@@ -36,7 +36,7 @@ function ChatHeader() {
           <h3 className="text-slate-200 font-medium">{selectedUser.fullName}</h3>
           {/* <p className="text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p> */}
           {isTyping ? (
-            <p className="text-cyan-400 text-sm italic flex items-center gap-1">
+           <p className="text-cyan-400 text-sm italic flex items-center gap-1">
               <span>typing</span>
               <span className="flex gap-0.5">
                 <span className="w-1 h-1 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
