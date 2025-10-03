@@ -14,6 +14,22 @@ export const useChatStore = create((set, get) => ({
   unreadCounts: {},
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
   typingUsers: {}, // NEW: Track typing users
+  theme: localStorage.getItem("theme") || "dark",
+
+  toggleTheme: () => {
+    const newTheme = get().theme === "dark" ? "light" : "dark";
+    localStorage.setItem("theme", newTheme);
+    
+    // Update document class
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    
+    set({ theme: newTheme });
+  },
+  
 
   toggleSound: () => {
     localStorage.setItem("isSoundEnabled", !get().isSoundEnabled);
