@@ -1,6 +1,6 @@
 import { ChevronDown, MoreVertical, Phone, PhoneIcon, VideoIcon, XIcon } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 
@@ -9,7 +9,8 @@ function ChatHeader() {
   const { onlineUsers } = useAuthStore();
   const isOnline = onlineUsers.includes(selectedUser._id);
     const isTyping = typingUsers[selectedUser._id] === true; // NEW: Check if user is typing
-
+    const menuRef = useRef(null);
+const [isMenuOpen, setIsMenuOpen] = useState(false);
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key === "Escape") setSelectedUser(null);
