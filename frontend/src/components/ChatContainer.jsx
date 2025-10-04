@@ -4,9 +4,9 @@ import ChatHeader from "./ChatHeader";
 import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getDateSeparatorLabel } from "../lib/getDateSeparatorLabel";
-import { Check, CheckCheck } from "lucide-react";
+import { Check, CheckCheck, ChevronDown } from "lucide-react";
 
 
 function ChatContainer() {
@@ -25,6 +25,8 @@ function ChatContainer() {
   } = useChatStore();
   const { authUser, socket } = useAuthStore();
   const messageEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   useEffect(() => {
     // subscribeToMessages();
@@ -36,11 +38,36 @@ function ChatContainer() {
     // return () => unsubscribeFromMessages();
   }, [selectedUser, getMessagesByUserId, socket]);
 
+  
+  useEffect(() => {
+    if (messageEndRef.current && !showScrollButton) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, showScrollButton]);
+
   useEffect(() => {
     if (messageEndRef.current) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+    useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToBottom = () => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   // Mark messages as read when user opens the chat
   useEffect(() => {
@@ -119,9 +146,9 @@ function ChatContainer() {
   return (
     <>
       <ChatHeader />
-      <div className="flex-1 px-6 overflow-y-auto">
+      <div ref={messagesContainerRef} className="flex-1 px-6 overflow-y-auto">
         {messages.length > 0 && !isMessagesLoading ? (
-          <div className="max-w-3xl mx-auto space-y-6">
+          <div className="w-full mx-auto space-y-6">
             {(() => {
               let lastDate = null;
               
@@ -234,6 +261,16 @@ function ChatContainer() {
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-600 dark:text-slate-400">Select a conversation to start chatting</p>
           </div>
+        )}
+
+         {showScrollButton && (
+          <button
+            onClick={scrollToBottom}
+            className="fixed bottom-24 right-8 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-full p-3 shadow-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition-all z-10"
+            aria-label="Scroll to bottom"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
         )}
       </div>
 
