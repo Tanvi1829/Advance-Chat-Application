@@ -39,7 +39,7 @@ function ChatPage() {
     //     </div>
     //   </BorderAnimatedContainer>
     // </div>
-      <div className="h-screen bg-gray-50 dark:bg-slate-900">
+      <div className="relative w-full max-w-6xl h-[800px] bg-gray-50 dark:bg-slate-900">
       <div className="container mx-auto h-full p-6">
         <div className="grid grid-cols-[380px_1fr] h-full gap-6">
           {/* SIDEBAR */}
