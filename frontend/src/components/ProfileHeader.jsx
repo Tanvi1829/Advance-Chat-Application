@@ -72,11 +72,11 @@ function ProfileHeader() {
 
           {/* USERNAME & ONLINE TEXT */}
           <div>
-            <h3 className="text-slate-200 font-medium text-base max-w-[180px] truncate">
+            <h3 className="text-gray-900 dark:text-slate-200 font-medium text-base max-w-[180px] truncate">
               {authUser.fullName}
             </h3>
 
-            <p className="text-slate-400 text-xs">Online</p>
+            <p className="text-gray-600 dark:text-slate-400 text-xs">Online</p>
           </div>
         </div>
 
@@ -114,17 +114,17 @@ function ProfileHeader() {
 
    <div className="relative" ref={menuRef}>
           <button
-            className="text-slate-400 hover:text-slate-200 transition-colors p-1"
+            className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors p-1"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <MoreVertical className="size-5" />
           </button>
 
           {isMenuOpen && (
-            <div className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-lg bg-slate-800 border border-slate-700 shadow-xl animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xl">
               <div className="py-1">
                 <button
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700/50 transition-colors"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors"
                   onClick={() => {
                     mouseClickSound.currentTime = 0;
                     mouseClickSound.play().catch((error) => console.log("Audio play failed:", error));
@@ -148,7 +148,7 @@ function ProfileHeader() {
                   <span>Theme</span>
                 </button> */}
                  <button
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-700/50 transition-colors"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors"
                   onClick={() => {
                     toggleTheme();
                     setIsMenuOpen(false);
@@ -162,10 +162,10 @@ function ProfileHeader() {
                   <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
                 </button>
 
-                <div className="border-t border-slate-700 my-1"></div>
+                <div className="border-t border-gray-200 dark:border-slate-700 my-1"></div>
 
                 <button
-                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-900/20 transition-colors"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   onClick={() => {
                     logout();
                     setIsMenuOpen(false);

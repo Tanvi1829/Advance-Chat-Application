@@ -23,8 +23,7 @@ function ChatHeader() {
 
   return (
     <div
-      className="flex justify-between items-center bg-slate-800/50 border-b
-   border-slate-700/50 max-h-[84px] px-6 flex-1"
+      className="flex justify-between items-center bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-700/50 max-h-[84px] px-6 flex-1"
     >
       <div className="flex items-center space-x-3">
         <div className={`avatar ${isOnline ? "online" : "offline"}`}>
@@ -34,7 +33,7 @@ function ChatHeader() {
         </div>
 
         <div>
-          <h3 className="text-slate-200 font-medium">{selectedUser.fullName}</h3>
+          <h3 className="text-gray-900 dark:text-slate-200 font-medium">{selectedUser.fullName}</h3>
           {/* <p className="text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p> */}
           {isTyping ? (
            <p className="text-cyan-400 text-sm italic flex items-center gap-1">
@@ -46,7 +45,7 @@ function ChatHeader() {
               </span>
             </p>
           ) : (
-            <p className="text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p>
+            <p className="text-gray-600 dark:text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p>
           )}
 
         </div>
@@ -54,77 +53,49 @@ function ChatHeader() {
 
 <div className="flex gap-6">
 
-            <PhoneIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
-            <VideoIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
+            <PhoneIcon className="w-5 h-5 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors cursor-pointer" />
+            <VideoIcon className="w-5 h-5 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors cursor-pointer" />
       {/* <button onClick={() => setSelectedUser(null)}>
         <XIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
       </button> */}
-     <Menu as="div" className="relative inline-block">
-      <MenuButton >
-        {/* Options */}
-        <MoreVertical aria-hidden="true" className="-mr-1 size-5 text-gray-400" />
-      </MenuButton>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors"
+          >
+            <MoreVertical className="size-5" />
+          </button>
 
-      <MenuItems
-        transition
-        className="absolute right-0 z-10 mt-2 w-56 origin-top-right divide-y divide-white/10 rounded-md bg-gray-800 outline-1 -outline-offset-1 outline-white/10 transition data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-      >
-        <div className="py-1">
-          <MenuItem>
-            <a
-              href="#"
-              className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:text-white data-focus:outline-hidden"
-            >
-              Edit Contact
-            </a>
-          </MenuItem>
-          <MenuItem>
-            <a
-              href="#"
-              className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:text-white data-focus:outline-hidden"
-            >
-              Archive Chat
-            </a>
-          </MenuItem>
+          {isMenuOpen && (
+            <div className="absolute right-0 z-10 mt-2 w-56 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xl">
+              <div className="py-1">
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50">
+                  Edit Contact
+                </button>
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50">
+                  Archive Chat
+                </button>
+                <div className="border-t border-gray-200 dark:border-slate-700 my-1"></div>
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50">
+                  Share Contact
+                </button>
+                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50">
+                  Add to favorites
+                </button>
+                <div className="border-t border-gray-200 dark:border-slate-700 my-1"></div>
+                <button className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  Delete Chat
+                </button>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50"
+                >
+                  Close Chat
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="py-1">
-          <MenuItem>
-            <a
-              href="#"
-              className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:text-white data-focus:outline-hidden"
-            >
-              Share Contact
-            </a>
-          </MenuItem>
-          <MenuItem>
-            <a
-              href="#"
-              className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:text-white data-focus:outline-hidden"
-            >
-              Add to favorites
-            </a>
-          </MenuItem>
-        </div>
-        <div className="py-1">
-          <MenuItem>
-            <a
-              href="#"
-              className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:text-white data-focus:outline-hidden"
-            >
-              Delete Chat
-            </a>
-          </MenuItem>
-          <MenuItem>
-            <button
-             onClick={() => setSelectedUser(null)}
-              className="block px-4 py-2 text-sm text-gray-300 data-focus:bg-white/5 data-focus:text-white data-focus:outline-hidden"
-            >
-              Close Chat
-            </button>
-          </MenuItem>
-        </div>
-      </MenuItems>
-    </Menu>
 </div>
     </div>
   );

@@ -100,12 +100,12 @@ function ChatContainer() {
   } else if (isReceiverOnline) {
     // Grey double tick - Delivered (receiver online but not read)
     return (
-      <CheckCheck className="w-4 h-4 text-slate-700" />
+      <CheckCheck className="w-4 h-4 text-slate-700 dark:text-slate-700" />
     );
   } else {
     // Single grey tick - Sent but not delivered (receiver offline)
     return (
-      <Check className="w-4 h-4 text-slate-700" />
+      <Check className="w-4 h-4 text-slate-700 dark:text-slate-700" />
     );
   }
   };
@@ -163,7 +163,7 @@ function ChatContainer() {
                   <div key={msg._id + '-container'}>
                     {showDateSeparator && (
                       <div className="flex justify-center my-2">
-                        <span className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded shadow-sm border border-slate-300 opacity-90" 
+                        <span className="bg-gray-200 dark:bg-slate-200 text-gray-700 dark:text-slate-600 text-xs px-2 py-0.5 rounded shadow-sm border border-gray-300 dark:border-slate-300 opacity-90" 
                               style={{fontWeight: 500, letterSpacing: '0.5px'}}>
                           {getDateSeparatorLabel(msg.createdAt)}
                         </span>
@@ -185,13 +185,13 @@ function ChatContainer() {
                         <span className="text-sm font-medium text-slate-300">{senderName}</span>
                       </div> */}
                        {!isSender && (
-          <span className="text-sm font-medium text-slate-300 mb-1">{senderName}</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{senderName}</span>
         )}
                       <div
                         className={`chat-bubble mt-1 relative ${
                           isSender
                           ? "bg-cyan-600 text-white"
-                          : "bg-slate-800 text-slate-200"
+                          : "bg-gray-200 dark:bg-slate-800 text-gray-900 dark:text-slate-200"
                         } p-3 rounded-lg max-w-xs break-words whitespace-pre-line`}
                       >
                         {msg.image && (
@@ -217,10 +217,10 @@ function ChatContainer() {
             })()}
               {isTyping && (
   <div className="flex items-start">
-    <div className="inline-flex items-center gap-1.5 bg-slate-800 rounded-2xl p-4" >
-      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+    <div className="inline-flex items-center gap-1.5 bg-gray-200 dark:bg-slate-800 rounded-2xl p-4" >
+      <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+      <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+      <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
     </div>
   </div>
 )}
@@ -232,7 +232,7 @@ function ChatContainer() {
           <NoChatHistoryPlaceholder name={selectedUser.fullName} />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p className="text-slate-400">Select a conversation to start chatting</p>
+            <p className="text-gray-600 dark:text-slate-400">Select a conversation to start chatting</p>
           </div>
         )}
       </div>
