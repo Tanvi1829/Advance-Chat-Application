@@ -57,8 +57,8 @@ function ChatsList() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-slate-200 font-medium truncate">{chat.fullName}</h4>
-                  {lastMessage && <span className="text-xs text-slate-400 ml-2">{time}</span>}
+                  <h4 className="text-gray-900 dark:text-slate-200 font-medium truncate">{chat.fullName}</h4>
+                  {lastMessage && <span className="text-xs text-gray-600 dark:text-slate-400 ml-2">{time}</span>}
                 </div>
                 <div className="flex justify-between items-center">
                   {/* <p className="text-sm text-slate-300 truncate whitespace-nowrap max-w-[180px]">
@@ -75,7 +75,7 @@ function ChatsList() {
                       </span>
                     </p>
                   ) : (
-                    <p className="text-sm text-slate-300 truncate whitespace-nowrap max-w-[180px]">
+                    <p className="text-sm text-gray-700 dark:text-slate-300 truncate whitespace-nowrap max-w-[180px]">
                       {lastMessage ? `${senderName}: ${messageText}` : messageText}
                     </p>
                   )}
