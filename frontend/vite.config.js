@@ -7,4 +7,9 @@ export default defineConfig({
   define: {
     global: {}, // Polyfill for browser environment
   },
+  resolve: {
+    alias: {
+      stream: 'stream-browserify',  // ✅ Polyfill if needed (npm install stream-browserify)
+    },
+  },
 })
