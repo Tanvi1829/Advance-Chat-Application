@@ -33,7 +33,9 @@ import {
   getMessagesByUserId,
   sendMessage,
   getChatPartners,
-  markMessagesAsRead
+  markMessagesAsRead,
+  getCallLogs,
+  createCallLog
 } from "../controllers/message.controller.js";
 
 const router = express.Router();
@@ -45,6 +47,10 @@ console.log("━━━━━━━━━━━━━━━━━━━━━━�
 
 router.get("/contacts", protectRoute, getAllContacts);
 router.get("/chats", protectRoute, getChatPartners);
+
+// Call logs routes
+router.get("/call-logs", protectRoute, getCallLogs);
+router.post("/call-logs", protectRoute, createCallLog);
 
 // Specific routes FIRST
 router.post("/mark-as-read/:id", protectRoute, (req, res, next) => {

@@ -15,6 +15,8 @@ export const useChatStore = create((set, get) => ({
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
   typingUsers: {}, // NEW: Track typing users
   theme: localStorage.getItem("theme") || "dark",
+  callLogs: [], // New
+  isCallLogsLoading: false,
 
   toggleTheme: () => {
     const newTheme = get().theme === "dark" ? "light" : "dark";
@@ -327,4 +329,26 @@ export const useChatStore = create((set, get) => ({
     set((state) => ({
       unreadCounts: { ...state.unreadCounts, [receiverId]: count },
     })),
+
+      getCallLogs: async () => {
+        set({ isCallLogsLoading: true });
+        try {
+          const res = await axiosInstance.get("/messages/call-logs");
+          set({ callLogs: res.data });
+        } catch (error) {
+          toast.error(error.response?.data?.message || "Cannot fetch call logs");
+        } finally {
+          set({ isCallLogsLoading: false });
+        }
+      },
+    
+      // New: Create call log
+      createCallLog: async (data) => {
+        try {
+          const res = await axiosInstance.post("/messages/call-logs", data);
+          set((state) => ({ callLogs: [res.data, ...state.callLogs] })); // Prepend to list
+        } catch (error) {
+          toast.error("Failed to save call log");
+        }
+      },
 }));

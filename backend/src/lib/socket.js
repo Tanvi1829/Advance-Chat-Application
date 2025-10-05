@@ -57,6 +57,60 @@ io.on("connection", (socket) => {
     delete userSocketMap[userId];
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
+
+    socket.on("call-user", ({ receiverId, offer }) => {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("incoming-call", {
+        callerId: userId,
+        callerName: socket.user.fullName,
+        offer,
+      });
+      console.log(`Call initiated from ${userId} to ${receiverId}`);
+    }
+  });
+
+  socket.on("answer-call", ({ callerId, answer }) => {
+    const callerSocketId = getReceiverSocketId(callerId);
+    if (callerSocketId) {
+      socket.to(callerSocketId).emit("call-accepted", { answer });
+    }
+  });
+
+  socket.on("reject-call", ({ callerId }) => {
+    const callerSocketId = getReceiverSocketId(callerId);
+    if (callerSocketId) {
+      socket.to(callerSocketId).emit("call-rejected");
+    }
+  });
+
+  socket.on("ice-candidate", ({ receiverId, candidate }) => {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("ice-candidate", { candidate });
+    }
+  });
+
+  socket.on("end-call", ({ receiverId }) => {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      socket.to(receiverSocketId).emit("call-ended");
+    }
+  });
+
+  // New: Create call log on call end (from backend, but emit to create)
+  socket.on("create-call-log", async ({ receiverId, duration, status }) => {
+    // You can emit to a webhook or directly call the controller, but for simplicity, just log
+    console.log(`Call log: ${userId} -> ${receiverId}, duration: ${duration}, status: ${status}`);
+    // In production, emit to a server-side event to persist
+  });
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected", socket.user.fullName);
+    delete userSocketMap[userId];
+    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+  });
+
 });
 
 export { io, app, server };

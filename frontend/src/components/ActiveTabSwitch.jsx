@@ -29,7 +29,7 @@ function ActiveTabSwitch() {
           activeTab === "calls" ? "bg-cyan-500/20 text-cyan-400" : "text-gray-600 dark:text-slate-400"
         }`}
       >
-        Call Logs
+       Calls
       </button>
 
       <button
