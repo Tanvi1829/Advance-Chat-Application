@@ -4,23 +4,28 @@ import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 
-function ChatHeader() {
+function ChatHeader({ onStartCall, isCalling }) {  // Added props for shared state
   const { selectedUser, setSelectedUser, typingUsers } = useChatStore();
   const { onlineUsers } = useAuthStore();
   const isOnline = onlineUsers.includes(selectedUser._id);
-    const isTyping = typingUsers[selectedUser._id] === true; // NEW: Check if user is typing
-    const menuRef = useRef(null);
-const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isTyping = typingUsers[selectedUser._id] === true;
+  const menuRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   useEffect(() => {
     const handleEscKey = (event) => {
       if (event.key === "Escape") setSelectedUser(null);
     };
 
     window.addEventListener("keydown", handleEscKey);
-
-    // cleanup function
     return () => window.removeEventListener("keydown", handleEscKey);
   }, [setSelectedUser]);
+
+  const handleStartCall = () => {
+    if (onStartCall) {
+      onStartCall();
+    }
+  };
 
   return (
     <div
@@ -35,7 +40,6 @@ const [isMenuOpen, setIsMenuOpen] = useState(false);
 
         <div>
           <h3 className="text-gray-900 dark:text-slate-200 font-medium">{selectedUser.fullName}</h3>
-          {/* <p className="text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p> */}
           {isTyping ? (
            <p className="text-cyan-400 text-sm italic flex items-center gap-1">
               <span>typing</span>
@@ -48,17 +52,21 @@ const [isMenuOpen, setIsMenuOpen] = useState(false);
           ) : (
             <p className="text-gray-600 dark:text-slate-400 text-sm">{isOnline ? "Online" : "Offline"}</p>
           )}
-
         </div>
       </div>
 
-<div className="flex gap-6">
+      <div className="flex gap-6">
+        <button 
+          onClick={handleStartCall} 
+          disabled={isCalling}  // Disable during call
+          className="mr-2 disabled:opacity-50"
+        >
+          <PhoneIcon className="w-5 h-5 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors cursor-pointer" />
+        </button>
+        <button>
 
-            <PhoneIcon className="w-5 h-5 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors cursor-pointer" />
-            <VideoIcon className="w-5 h-5 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors cursor-pointer" />
-      {/* <button onClick={() => setSelectedUser(null)}>
-        <XIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
-      </button> */}
+        <VideoIcon className="w-5 h-5 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors cursor-pointer" />
+        </button>
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -97,7 +105,7 @@ const [isMenuOpen, setIsMenuOpen] = useState(false);
             </div>
           )}
         </div>
-</div>
+      </div>
     </div>
   );
 }

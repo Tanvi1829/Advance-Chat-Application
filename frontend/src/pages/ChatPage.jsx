@@ -7,6 +7,7 @@ import ProfileHeader from "../components/ProfileHeader";
 import ActiveTabSwitch from "../components/ActiveTabSwitch";
 import ContactList from "../components/ContactList";
 import NoConversationPlaceholder from "../components/NoConversationPlaceholder";
+import CallLogsList from "../components/CallLogsList";
 
 function ChatPage() {
   const { subscribeToMessages, unsubscribeFromMessages, selectedUser, activeTab } = useChatStore();
@@ -23,6 +24,19 @@ function ChatPage() {
     };
   }, [subscribeToMessages, unsubscribeFromMessages, socket]);
 
+  const renderTabContent = () => {
+      switch (activeTab) {
+        case "chats":
+          return <ChatsList />;
+        case "contacts":
+          return <ContactList />;
+        case "calls":
+          return <CallLogsList />; // New
+        default:
+          return <ChatsList />;
+      }
+    };
+
   return (
     <div className="h-screen w-screen bg-gray-50 dark:bg-slate-900 flex">
       {/* SIDEBAR */}
@@ -30,7 +44,8 @@ function ChatPage() {
         <ProfileHeader />
         <ActiveTabSwitch />
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {activeTab === "chats" ? <ChatsList /> : <ContactList />}
+          {/* {activeTab === "chats" ? <ChatsList /> : <ContactList />} */}
+          {renderTabContent()}
         </div>
       </aside>
 

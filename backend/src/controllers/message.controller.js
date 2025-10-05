@@ -1,7 +1,72 @@
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
+import CallLog from "../models/CallLog.js";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
+
+
+export const getCallLogs = async (req, res) => {
+  try {
+    const loggedInUserId = req.user._id;
+
+    const callLogs = await CallLog.find({
+      $or: [{ callerId: loggedInUserId }, { receiverId: loggedInUserId }],
+    })
+      .populate("callerId", "fullName profilePic")
+      .populate("receiverId", "fullName profilePic")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Transform for frontend: Determine type from user's perspective
+    const transformedLogs = callLogs.map((log) => {
+      if (log.callerId._id.toString() === loggedInUserId.toString()) {
+        // Outgoing
+        return {
+          ...log,
+          type: "outgoing",
+          contact: log.receiverId,
+          icon: "ArrowUpRight", // For frontend
+        };
+      } else {
+        // Incoming
+        return {
+          ...log,
+          type: "incoming",
+          contact: log.callerId,
+          icon: "ArrowDownLeft", // For frontend
+        };
+      }
+    });
+
+    res.status(200).json(transformedLogs);
+  } catch (error) {
+    console.error("Error in getCallLogs:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// New: Create call log (called after call ends)
+export const createCallLog = async (req, res) => {
+  try {
+    const { receiverId, type, duration = 0, status = "missed" } = req.body;
+    const callerId = req.user._id;
+
+    const newCallLog = new CallLog({
+      callerId,
+      receiverId,
+      type,
+      duration,
+      status,
+    });
+
+    await newCallLog.save();
+
+    res.status(201).json(newCallLog);
+  } catch (error) {
+    console.error("Error in createCallLog:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // ✅ Get all contacts except self
 export const getAllContacts = async (req, res) => {

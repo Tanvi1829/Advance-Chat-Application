@@ -6,8 +6,257 @@ import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import { getDateSeparatorLabel } from "../lib/getDateSeparatorLabel";
-import { Check, CheckCheck, ChevronDown } from "lucide-react";
+import { Check, CheckCheck, ChevronDown, X } from "lucide-react";
+import Peer from "simple-peer";
 
+// Incoming Call Modal Component
+function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) {
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg text-center max-w-sm w-full mx-4">
+        <img
+          src="/avatar.png" // Fetch caller profile pic via API if needed
+          alt={callerName}
+          className="w-24 h-24 rounded-full mx-auto mb-4"
+        />
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Incoming Voice Call</h2>
+        <p className="text-gray-600 dark:text-slate-400 mb-6">{callerName} is calling</p>
+        <div className="flex space-x-4 justify-center">
+          <button
+            onClick={onReject}
+            className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <button
+            onClick={onAccept}
+            className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600"
+          >
+            <Phone className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Voice Call Interface
+function VoiceCall({ 
+  isIncoming = false, 
+  callerId, 
+  receiverId, 
+  offer, 
+  onEndCall, 
+  callType = "voice",
+  selectedUser 
+}) {
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [peer, setPeer] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState(null);
+  const myVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const { socket } = useAuthStore();
+  const { createCallLog } = useChatStore();
+  const callStartTime = useRef(Date.now());
+
+  useEffect(() => {
+    const initStream = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: callType === "video", 
+          audio: true 
+        });
+        setLocalStream(stream);
+        if (myVideoRef.current) {
+          myVideoRef.current.srcObject = stream;
+        }
+        callStartTime.current = Date.now();
+      } catch (err) {
+        console.error("Error accessing media devices:", err);
+        setError("Microphone access denied. Please allow microphone permissions.");
+        onEndCall(); // End call if no access
+      }
+    };
+
+    initStream();
+
+    return () => {
+      localStream?.getTracks().forEach((track) => track.stop());
+    };
+  }, [callType, onEndCall]);
+
+  useEffect(() => {
+    if (!localStream || !socket) return;
+
+    const p = new Peer({
+      initiator: !isIncoming,
+      trickle: false,
+      stream: localStream,
+      config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } // Basic STUN for NAT traversal
+    });
+
+    p.on("signal", (data) => {
+      if (!isIncoming) {
+        // Outgoing: emit offer
+        socket.emit("call-user", { 
+          receiverId: receiverId || selectedUser._id, 
+          offer: data 
+        });
+        console.log("Offer emitted:", data); // Debug log
+      } else {
+        // Incoming accepted: emit answer
+        socket.emit("answer-call", { 
+          callerId: callerId, 
+          answer: data 
+        });
+        console.log("Answer emitted:", data); // Debug log
+      }
+    });
+
+    p.on("stream", (remoteStream) => {
+      setRemoteStream(remoteStream);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+      setIsConnected(true);
+      console.log("Remote stream received"); // Debug
+    });
+
+    p.on("error", (err) => {
+      console.error("Peer error:", err);
+      setError("Call failed. Please try again.");
+      onEndCall();
+    });
+
+    p.on("close", () => {
+      endCall();
+    });
+
+    setPeer(p);
+
+    // For incoming calls, signal the offer immediately
+    if (isIncoming && offer) {
+      p.signal(offer);
+      console.log("Signaled offer for incoming call"); // Debug
+    }
+
+    // Socket event handlers
+    const handleCallAccepted = ({ answer }) => {
+      if (!isIncoming) {
+        p.signal(answer);
+        console.log("Signaled answer"); // Debug
+      }
+    };
+
+    const handleCallRejected = () => {
+      endCall();
+    };
+
+    const handleCallEnded = () => {
+      endCall();
+    };
+
+    const handleIceCandidate = ({ candidate }) => {
+      if (candidate) {
+        p.signal(candidate);
+      }
+    };
+
+    socket.on("call-accepted", handleCallAccepted);
+    socket.on("call-rejected", handleCallRejected);
+    socket.on("call-ended", handleCallEnded);
+    socket.on("ice-candidate", handleIceCandidate);
+
+    return () => {
+      socket.off("call-accepted", handleCallAccepted);
+      socket.off("call-rejected", handleCallRejected);
+      socket.off("call-ended", handleCallEnded);
+      socket.off("ice-candidate", handleIceCandidate);
+      p.destroy();
+    };
+  }, [localStream, isIncoming, receiverId, callerId, offer, socket, selectedUser, callType, onEndCall]);
+
+  const endCall = () => {
+    const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
+    const status = isConnected ? "completed" : "missed";
+    const logReceiverId = isIncoming ? callerId : (receiverId || selectedUser._id);
+    createCallLog({
+      receiverId: logReceiverId,
+      type: isIncoming ? "incoming" : "outgoing",
+      duration,
+      status,
+    });
+    console.log("Call ended, log created:", { duration, status }); // Debug
+    onEndCall();
+    if (peer) peer.destroy();
+    if (localStream) localStream.getTracks().forEach((track) => track.stop());
+    socket.emit("end-call", { receiverId: logReceiverId });
+  };
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 text-white">
+        <div className="bg-red-500 p-4 rounded-lg text-center">
+          <p>{error}</p>
+          <button onClick={onEndCall} className="mt-2 bg-white text-red-500 px-4 py-2 rounded">OK</button>
+        </div>
+      </div>
+    );
+  }
+
+  const title = isIncoming
+    ? "Ringing..."
+    : isConnected
+    ? "Connected"
+    : "Calling...";
+
+  const durationDisplay = isConnected ? Math.floor((Date.now() - callStartTime.current) / 1000) : 0;
+  const mins = Math.floor(durationDisplay / 60);
+  const secs = durationDisplay % 60;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50 text-white">
+      <div className="text-center mb-8">
+        <img
+          src={selectedUser?.profilePic || "/avatar.png"}
+          alt="Call participant"
+          className="w-32 h-32 rounded-full mx-auto mb-4"
+        />
+        <h2 className="text-2xl font-semibold">{selectedUser?.fullName}</h2>
+        <p className="text-gray-400">{title}</p>
+        {isConnected && (
+          <p className="text-sm text-green-400 mt-2">
+            {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
+          </p>
+        )}
+      </div>
+      <video ref={myVideoRef} autoPlay muted className="hidden" />
+      <video 
+        ref={remoteVideoRef} 
+        autoPlay 
+        className={`w-64 h-64 bg-gray-900 rounded-full mb-8 ${callType === 'video' ? 'block' : 'hidden'}`} 
+      />
+      <div className="flex space-x-4">
+        {callType === "video" && (
+          <button onClick={() => {}} className="p-3 bg-gray-600 text-white rounded-full hover:bg-gray-700">
+            <VideoIcon className="w-6 h-6" />
+          </button>
+        )}
+        <button
+          onClick={endCall}
+          className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600"
+        >
+          <X className="w-8 h-8" />
+        </button>
+        <button onClick={() => {}} className="p-3 bg-gray-600 text-white rounded-full hover:bg-gray-700">
+          <ChevronDown className="w-6 h-6" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ChatContainer() {
   const {
@@ -17,28 +266,81 @@ function ChatContainer() {
     getMessagesByUserId,
     messages,
     isMessagesLoading,
-    subscribeToMessages,
-    unsubscribeFromMessages,
     markMessagesAsRead,
     setUnreadCount,
     chats,
+    createCallLog,
   } = useChatStore();
-  const { authUser, socket } = useAuthStore();
+  const { authUser, socket, onlineUsers } = useAuthStore();
   const messageEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null); // {callerId, callerName, offer}
+  const [isCalling, setIsCalling] = useState(false); // Shared outgoing call state
+  const [currentCallType, setCurrentCallType] = useState("voice");
 
   useEffect(() => {
-    // subscribeToMessages();
-
     if (selectedUser) {
       getMessagesByUserId(selectedUser._id);
     }
-
-    // return () => unsubscribeFromMessages();
   }, [selectedUser, getMessagesByUserId, socket]);
 
-  
+  // Socket listeners for incoming calls (global)
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIncomingCall = ({ callerId, callerName, offer }) => {
+      console.log("Incoming call received:", callerId, callerName); // Debug
+      setIncomingCall({ callerId, callerName, offer });
+    };
+
+    const handleCallEnded = () => {
+      console.log("Call ended via socket"); // Debug
+      setIsCalling(false);
+      setIncomingCall(null);
+    };
+
+    socket.on("incoming-call", handleIncomingCall);
+    socket.on("call-ended", handleCallEnded);
+
+    return () => {
+      socket.off("incoming-call", handleIncomingCall);
+      socket.off("call-ended", handleCallEnded);
+    };
+  }, [socket]);
+
+  const handleAcceptCall = () => {
+    setIncomingCall(null);
+    setIsCalling(true);
+    setCurrentCallType("voice");
+    console.log("Call accepted"); // Debug
+  };
+
+  const handleRejectCall = () => {
+    const callerId = incomingCall.callerId;
+    setIncomingCall(null);
+    socket.emit("reject-call", { callerId });
+    // Create missed log
+    createCallLog({
+      receiverId: callerId,
+      type: "incoming",
+      duration: 0,
+      status: "missed",
+    });
+    console.log("Call rejected"); // Debug
+  };
+
+  const startCall = () => {
+    if (!selectedUser || !socket) {
+      console.error("No selected user or socket"); // Debug
+      return;
+    }
+    setIsCalling(true);
+    setCurrentCallType("voice");
+    console.log("Starting outgoing call to:", selectedUser._id); // Debug
+  };
+
+  // Existing useEffects for scrolling and read receipts
   useEffect(() => {
     if (messageEndRef.current && !showScrollButton) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -51,7 +353,7 @@ function ChatContainer() {
     }
   }, [messages]);
 
-    useEffect(() => {
+  useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
@@ -69,7 +371,6 @@ function ChatContainer() {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Mark messages as read when user opens the chat
   useEffect(() => {
     if (selectedUser && messages.length > 0) {
       const unreadMessages = messages.filter(
@@ -78,92 +379,51 @@ function ChatContainer() {
           msg.receiverId?.toString() === authUser._id &&
           msg.senderId?.toString() === selectedUser._id
       );
-      console.log("unreadMessages", unreadMessages);
       
       if (unreadMessages.length > 0) {
-        // Delay marking as read to allow user to see the badge
         const timer = setTimeout(() => {
           markMessagesAsRead(selectedUser._id);
-          // setUnreadCount(selectedUser._id, 0);
         }, 1000);
-        
         return () => clearTimeout(timer);
       }
     }
   }, [selectedUser?._id, messages.length, authUser._id, markMessagesAsRead]);
 
-    const renderReadReceipt = (msg) => {
+  const renderReadReceipt = (msg) => {
     const isSender = msg.senderId === authUser._id;
-    
-    // Only show ticks for messages sent by current user
     if (!isSender) return null;
 
-    
-  const receiverUserId = msg.receiverId;
-  const { isUserOnline } = useAuthStore.getState();
-  const isReceiverOnline = isUserOnline(receiverUserId);
+    const receiverUserId = msg.receiverId;
+    const { isUserOnline } = useAuthStore.getState();
+    const isReceiverOnline = isUserOnline(receiverUserId);
 
-    // if (msg.read) {
-    //   // Double blue tick - Message read
-    //   return (
-    //     <div className="flex items-center gap-0.5 ml-1">
-    //       <CheckCheck className="w-4 h-4 text-white" />
-    //     </div>
-    //   );
-    // } else {
-    //   // Double grey tick - Message delivered but not read
-    //   return (
-    //     <div className="flex items-center gap-0.5 ml-1">
-    //       <CheckCheck className="w-4 h-4 text-slate-400" />
-    //     </div>
-    //   );
-    // }
-
-      if (msg.read) {
-    // Blue double tick - Message read
-    return (
-      <CheckCheck className="w-4 h-4 text-white" />
-    );
-  } else if (isReceiverOnline) {
-    // Grey double tick - Delivered (receiver online but not read)
-    return (
-      <CheckCheck className="w-4 h-4 text-slate-700 dark:text-slate-700" />
-    );
-  } else {
-    // Single grey tick - Sent but not delivered (receiver offline)
-    return (
-      <Check className="w-4 h-4 text-slate-700 dark:text-slate-700" />
-    );
-  }
+    if (msg.read) {
+      return <CheckCheck className="w-4 h-4 text-white" />;
+    } else if (isReceiverOnline) {
+      return <CheckCheck className="w-4 h-4 text-slate-700 dark:text-slate-700" />;
+    } else {
+      return <Check className="w-4 h-4 text-slate-700 dark:text-slate-700" />;
+    }
   };
 
-    // const isTyping = selectedUser
-    // ? chats.find((chat) => chat._id === selectedUser._id)?.isTyping || false
-    // : false;
-
-        const isTyping = typingUsers[selectedUser._id] === true; // NEW: Check if user is typing
+  const isTyping = typingUsers[selectedUser?._id] === true;
 
   return (
     <>
-      <ChatHeader />
+      {selectedUser && <ChatHeader onStartCall={startCall} isCalling={isCalling} />}
       <div ref={messagesContainerRef} className="flex-1 px-6 overflow-y-auto">
         {messages.length > 0 && !isMessagesLoading ? (
           <div className="w-full mx-auto space-y-6">
             {(() => {
               let lastDate = null;
-              
-              // Find unread messages from the other user
               const unreadMessages = messages.filter(
                 (msg) =>
                   msg.read === false &&
                   msg.receiverId?.toString() === authUser._id &&
                   msg.senderId?.toString() === selectedUser._id
               );
-              
               let firstUnreadIdx = -1;
               let unreadCount = 0;
-              
-              
               if (unreadMessages.length > 0) {
                 const firstUnreadMsgId = unreadMessages[0]._id;
                 firstUnreadIdx = messages.findIndex((msg) => msg._id === firstUnreadMsgId);
@@ -183,9 +443,8 @@ function ChatContainer() {
                   lastDate = msgDateOnly;
                 }
 
-  const showUnreadBadge = unreadCount > 0 && idx === firstUnreadIdx;
+                const showUnreadBadge = unreadCount > 0 && idx === firstUnreadIdx;
 
-                
                 return (
                   <div key={msg._id + '-container'}>
                     {showDateSeparator && (
@@ -196,7 +455,6 @@ function ChatContainer() {
                         </span>
                       </div>
                     )}
-                    {/* {unreadCount > 0 && idx === firstUnreadIdx && ( */}
                     {showUnreadBadge && (
                       <div className="flex justify-center my-3">
                         <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full shadow-sm font-semibold opacity-95">
@@ -204,16 +462,10 @@ function ChatContainer() {
                         </span>
                       </div>
                     )}
-                    
-                    {/* Show unread badge after date separator */}
-                    
                     <div className={`flex flex-col ${isSender ? "items-end" : "items-start"}`}>
-                      {/* <div className="flex items-baseline gap-2">
-                        <span className="text-sm font-medium text-slate-300">{senderName}</span>
-                      </div> */}
-                       {!isSender && (
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{senderName}</span>
-        )}
+                      {!isSender && (
+                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{senderName}</span>
+                      )}
                       <div
                         className={`chat-bubble mt-1 relative ${
                           isSender
@@ -224,33 +476,26 @@ function ChatContainer() {
                         {msg.image && (
                           <img src={msg.image} alt="Shared" className="rounded-lg h-48 object-cover" />
                         )}
-                        {/* {msg.text && <p>{msg.text}</p>}
-                        <span className="text-xs text-slate-400">{time}</span>
-                         {isSender && (
-                          <span className="inline-flex items-center ml-1 align-bottom">
-                            {renderReadReceipt(msg)}
-                          </span>
-                        )} */}
-                         {msg.text && <p className="mb-1">{msg.text}</p>}
-          <div className="flex items-center justify-end gap-1 mt-1">
-            <span className="text-xs opacity-70">{time}</span>
-            {isSender && renderReadReceipt(msg)}
-          </div>
+                        {msg.text && <p className="mb-1">{msg.text}</p>}
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <span className="text-xs opacity-70">{time}</span>
+                          {isSender && renderReadReceipt(msg)}
+                        </div>
                       </div>
                     </div>
                   </div>
                 );
               });
             })()}
-              {isTyping && (
-  <div className="flex items-start">
-    <div className="inline-flex items-center gap-1.5 bg-gray-200 dark:bg-slate-800 rounded-2xl p-4" >
-      <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-      <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-      <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-    </div>
-  </div>
-)}
+            {isTyping && (
+              <div className="flex items-start">
+                <div className="inline-flex items-center gap-1.5 bg-gray-200 dark:bg-slate-800 rounded-2xl p-4" >
+                  <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-2 h-2 bg-gray-500 dark:bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
+              </div>
+            )}
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
@@ -263,7 +508,7 @@ function ChatContainer() {
           </div>
         )}
 
-         {showScrollButton && (
+        {showScrollButton && (
           <button
             onClick={scrollToBottom}
             className="fixed bottom-24 right-8 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-full p-3 shadow-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition-all z-10"
@@ -275,6 +520,26 @@ function ChatContainer() {
       </div>
 
       {selectedUser && <MessageInput />}
+      
+      {/* Call Overlays */}
+      {incomingCall && !isCalling && (
+        <IncomingCallModal
+          callerId={incomingCall.callerId}
+          callerName={incomingCall.callerName}
+          offer={incomingCall.offer}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+        />
+      )}
+      {isCalling && selectedUser && (
+        <VoiceCall
+          isIncoming={false}
+          receiverId={selectedUser._id}
+          selectedUser={selectedUser}
+          onEndCall={() => setIsCalling(false)}
+          callType={currentCallType}
+        />
+      )}
     </>
   );
 }
