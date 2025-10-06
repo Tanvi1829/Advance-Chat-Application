@@ -14,28 +14,28 @@ import toast from "react-hot-toast";
 function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) {
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
-      {/* Top: Avatar & Name */}
+      {/* Top: Large Avatar & Name */}
       <div className="text-center flex flex-col items-center">
-        <div className="w-32 h-32 bg-green-500 rounded-full flex items-center justify-center mb-4">
-          <User className="w-16 h-16 text-white" /> {/* Or img src={callerPic} */}
+        <div className="w-40 h-40 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-6 shadow-2xl">
+          <img src="/avatar.png" alt={callerName} className="w-32 h-32 rounded-full" /> {/* Dynamic profile pic */}
         </div>
-        <h2 className="text-2xl font-semibold text-white mb-1">{callerName}</h2>
-        <p className="text-green-400 text-lg">Incoming Voice Call</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{callerName}</h2>
+        <p className="text-green-400 text-xl">Incoming Voice Call</p>
       </div>
 
-      {/* Bottom: Buttons */}
-      <div className="flex space-x-6">
+      {/* Bottom: Accept/Reject Buttons */}
+      <div className="flex space-x-8">
         <button 
           onClick={onReject} 
-          className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700"
+          className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700 transition-all"
         >
           <X className="w-8 h-8 text-white" />
         </button>
         <button 
           onClick={onAccept} 
-          className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600"
+          className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-all"
         >
-          <Phone className="w-8 h-8 text-white rotate-180" /> {/* WhatsApp style flip */}
+          <Phone className="w-8 h-8 text-white" />
         </button>
       </div>
     </div>
@@ -43,6 +43,199 @@ function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) 
 }
 
 // Updated: Full Screen Voice Call (Caller Side – Image 1 Style)
+// function VoiceCall({ 
+//   isIncoming = false, 
+//   callerId, 
+//   receiverId, 
+//   offer, 
+//   onEndCall, 
+//   callType = "voice",
+//   selectedUser 
+// }) {
+//   const { onlineUsers } = useAuthStore(); // For offline/online status
+//   const isReceiverOnline = onlineUsers.includes(selectedUser?._id);
+//   const [localStream, setLocalStream] = useState(null);
+//   const [remoteStream, setRemoteStream] = useState(null);
+//   const [peer, setPeer] = useState(null);
+//   const [isConnected, setIsConnected] = useState(false);
+//   const [error, setError] = useState(null);
+//   const [isInitializing, setIsInitializing] = useState(true);
+//   const myVideoRef = useRef(null);
+//   const remoteVideoRef = useRef(null);
+//   const { socket } = useAuthStore();
+//   const { createCallLog } = useChatStore();
+//   const callStartTime = useRef(Date.now());
+
+//   useEffect(() => {
+//     const initStream = async () => {
+//       try {
+//         const stream = await navigator.mediaDevices.getUserMedia({ video: callType === "video", audio: true });
+//         setLocalStream(stream);
+//         if (myVideoRef.current) myVideoRef.current.srcObject = stream;
+//         callStartTime.current = Date.now();
+//       } catch (err) {
+//         console.error("Media error:", err);
+//         setError("Allow microphone for calls.");
+//         setIsInitializing(false);
+//       }
+//     };
+//     initStream();
+
+//     return () => localStream?.getTracks().forEach(track => track.stop());
+//   }, [callType]);
+
+//   useEffect(() => {
+//     if (typeof window.SimplePeer === 'undefined') {
+//       setTimeout(() => {
+//         if (typeof window.SimplePeer === 'undefined') setError("Call library load failed. Refresh.");
+//       }, 1000);
+//       return;
+//     }
+
+//     if (!localStream || !socket || !selectedUser) {
+//       setIsInitializing(false);
+//       return;
+//     }
+
+//     let p;
+//     try {
+//       p = new window.SimplePeer({
+//         initiator: !isIncoming,
+//         trickle: false,
+//         stream: localStream,
+//         config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+//       });
+//       console.log("✅ Peer ready");
+//     } catch (err) {
+//       console.error("Peer init error:", err);
+//       setError("Call setup failed.");
+//       setIsInitializing(false);
+//       return;
+//     }
+
+//     p.on("signal", (data) => {
+//       if (!isIncoming) {
+//         socket.emit("call-user", { receiverId: receiverId || selectedUser._id, offer: data });
+//       } else {
+//         socket.emit("answer-call", { callerId, answer: data });
+//       }
+//     });
+
+//     p.on("stream", (stream) => {
+//       setRemoteStream(stream);
+//       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+//       setIsConnected(true);
+//     });
+
+//     p.on("error", (err) => {
+//       console.error("Peer error:", err);
+//       setError("Connection lost.");
+//       onEndCall();
+//     });
+
+//     p.on("close", endCall);
+
+//     setPeer(p);
+//     setIsInitializing(false);
+
+//     if (isIncoming && offer) p.signal(offer);
+
+//     const handleAccepted = ({ answer }) => !isIncoming && p.signal(answer);
+//     const handleRejected = endCall;
+//     const handleEnded = endCall;
+//     const handleIce = ({ candidate }) => p.signal(candidate);
+
+//     socket.on("call-accepted", handleAccepted);
+//     socket.on("call-rejected", handleRejected);
+//     socket.on("call-ended", handleEnded);
+//     socket.on("ice-candidate", handleIce);
+
+//     return () => {
+//       socket.off("call-accepted", handleAccepted);
+//       socket.off("call-rejected", handleRejected);
+//       socket.off("call-ended", handleEnded);
+//       socket.off("ice-candidate", handleIce);
+//       p?.destroy();
+//     };
+//   }, [localStream, isIncoming, callerId, receiverId, offer, socket, selectedUser, callType, onEndCall]);
+
+//   const endCall = () => {
+//     const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
+//     const status = isConnected ? "completed" : "missed";
+//     createCallLog({ 
+//       receiverId: isIncoming ? callerId : (receiverId || selectedUser._id), 
+//       type: isIncoming ? "incoming" : "outgoing", 
+//       duration, 
+//       status 
+//     });
+//     onEndCall();
+//     peer?.destroy();
+//     localStream?.getTracks().forEach(track => track.stop());
+//     socket.emit("end-call", { receiverId: isIncoming ? callerId : (receiverId || selectedUser._id) });
+//   };
+
+//   if (error) {
+//     return (
+//       <div className="fixed inset-0 bg-black flex items-center justify-center z-50 text-white">
+//         <div className="bg-red-500 p-4 rounded-lg text-center max-w-sm">
+//           <p className="mb-4">{error}</p>
+//           <button onClick={onEndCall} className="bg-white text-red-500 px-4 py-2 rounded">Close</button>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (isInitializing) {
+//     return (
+//       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 text-white">
+//         <div className="text-center">
+//           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+//           <p>Starting call...</p>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   // Status: Offline = "Calling...", Online = "Ringing..." (for caller)
+//   const statusText = !isIncoming ? (isReceiverOnline ? "Ringing..." : "Calling...") : "Ringing...";
+//   const duration = isConnected ? Math.floor((Date.now() - callStartTime.current) / 1000) : 0;
+//   const mins = Math.floor(duration / 60);
+//   const secs = duration % 60;
+
+//   return (
+//     <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
+//       {/* Top: Avatar & Name */}
+//       <div className="text-center flex flex-col items-center">
+//         <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-4">
+//           <User className="w-16 h-16 text-white" /> {/* Or img */}
+//         </div>
+//         <h2 className="text-2xl font-semibold text-white mb-1">{selectedUser?.fullName}</h2>
+//         <p className="text-green-400 text-lg">{statusText}</p>
+//         {isConnected && <p className="text-sm text-green-400 mt-2">{mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}</p>}
+//       </div>
+
+//       {/* Video (if video call) */}
+//       <video ref={remoteVideoRef} autoPlay className={`w-64 h-64 bg-gray-900 rounded-full ${callType === 'video' ? 'block' : 'hidden'}`} />
+//       <video ref={myVideoRef} autoPlay muted className="hidden" />
+
+//       {/* Bottom: End Button */}
+//       <div className="flex space-x-6">
+//         {callType === "video" && (
+//           <button className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
+//             <Phone className="w-6 h-6 text-white" />
+//           </button>
+//         )}
+//         <button onClick={endCall} className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600">
+//           <X className="w-8 h-8 text-white" />
+//         </button>
+//         <button className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
+//           <ChevronDown className="w-6 h-6 text-white" />
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
 function VoiceCall({ 
   isIncoming = false, 
   callerId, 
@@ -52,7 +245,7 @@ function VoiceCall({
   callType = "voice",
   selectedUser 
 }) {
-  const { onlineUsers } = useAuthStore(); // For offline/online status
+  const { onlineUsers } = useAuthStore();
   const isReceiverOnline = onlineUsers.includes(selectedUser?._id);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -60,6 +253,8 @@ function VoiceCall({
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); // Mic mute state
+  const [isSpeaker, setIsSpeaker] = useState(true); // Speaker on/off
   const myVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const { socket } = useAuthStore();
@@ -75,7 +270,7 @@ function VoiceCall({
         callStartTime.current = Date.now();
       } catch (err) {
         console.error("Media error:", err);
-        setError("Allow microphone for calls.");
+        setError("Allow microphone/camera for calls.");
         setIsInitializing(false);
       }
     };
@@ -84,11 +279,26 @@ function VoiceCall({
     return () => localStream?.getTracks().forEach(track => track.stop());
   }, [callType]);
 
+  // Mic Mute Toggle
+  const toggleMute = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+      }
+    }
+  };
+
+  // Speaker Toggle (for mobile – uses Web Audio API if needed)
+  const toggleSpeaker = () => {
+    setIsSpeaker(!isSpeaker);
+    // For advanced: Implement Web Audio Context for speaker routing
+  };
+
   useEffect(() => {
     if (typeof window.SimplePeer === 'undefined') {
-      setTimeout(() => {
-        if (typeof window.SimplePeer === 'undefined') setError("Call library load failed. Refresh.");
-      }, 1000);
+      setTimeout(() => setError("Call library failed. Refresh."), 1000);
       return;
     }
 
@@ -105,10 +315,8 @@ function VoiceCall({
         stream: localStream,
         config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
       });
-      console.log("✅ Peer ready");
     } catch (err) {
-      console.error("Peer init error:", err);
-      setError("Call setup failed.");
+      setError("Call connection failed.");
       setIsInitializing(false);
       return;
     }
@@ -127,9 +335,8 @@ function VoiceCall({
       setIsConnected(true);
     });
 
-    p.on("error", (err) => {
-      console.error("Peer error:", err);
-      setError("Connection lost.");
+    p.on("error", () => {
+      setError("Call dropped.");
       onEndCall();
     });
 
@@ -187,55 +394,67 @@ function VoiceCall({
 
   if (isInitializing) {
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 text-white">
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 text-white pt-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Starting call...</p>
+          <p className="text-xl">Connecting...</p>
         </div>
       </div>
     );
   }
 
-  // Status: Offline = "Calling...", Online = "Ringing..." (for caller)
-  const statusText = !isIncoming ? (isReceiverOnline ? "Ringing..." : "Calling...") : "Ringing...";
-  const duration = isConnected ? Math.floor((Date.now() - callStartTime.current) / 1000) : 0;
+  // For receiver after accept: Show connected screen immediately
+  const isActiveCall = isConnected || !isIncoming; // Receiver after accept = active
+  const statusText = isActiveCall ? "Connected" : (isReceiverOnline ? "Ringing..." : "Calling...");
+  const duration = isActiveCall ? Math.floor((Date.now() - callStartTime.current) / 1000) : 0;
   const mins = Math.floor(duration / 60);
   const secs = duration % 60;
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
-      {/* Top: Avatar & Name */}
+      {/* Top: Avatar & Status */}
       <div className="text-center flex flex-col items-center">
-        <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-4">
-          <User className="w-16 h-16 text-white" /> {/* Or img */}
+        <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-2xl">
+          <img src={selectedUser?.profilePic || "/avatar.png"} alt="" className="w-28 h-28 rounded-full" />
         </div>
-        <h2 className="text-2xl font-semibold text-white mb-1">{selectedUser?.fullName}</h2>
+        <h2 className="text-2xl font-bold text-white mb-1">{selectedUser?.fullName}</h2>
         <p className="text-green-400 text-lg">{statusText}</p>
-        {isConnected && <p className="text-sm text-green-400 mt-2">{mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}</p>}
+        {isActiveCall && <p className="text-sm text-white mt-2">{mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}</p>}
       </div>
 
-      {/* Video (if video call) */}
-      <video ref={remoteVideoRef} autoPlay className={`w-64 h-64 bg-gray-900 rounded-full ${callType === 'video' ? 'block' : 'hidden'}`} />
+      {/* Remote Video (Full Screen for Video Calls) */}
+      {callType === "video" && (
+        <video ref={remoteVideoRef} autoPlay className="w-full h-64 bg-gray-900 rounded-2xl mt-8" />
+      )}
       <video ref={myVideoRef} autoPlay muted className="hidden" />
 
-      {/* Bottom: End Button */}
-      <div className="flex space-x-6">
-        {callType === "video" && (
-          <button className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
-            <Phone className="w-6 h-6 text-white" />
+      {/* Bottom Controls Bar (WhatsApp Style – Image 2) */}
+      {isActiveCall && (
+        <div className="flex space-x-6 bg-black/50 backdrop-blur-sm p-4 rounded-full w-full max-w-md justify-center">
+          {callType === "video" && (
+            <button onClick={() => {}} className="p-3 bg-gray-700 rounded-full">
+              <SwitchCamera className="w-6 h-6 text-white" />
+            </button>
+          )}
+          <button onClick={toggleMute} className={`p-3 rounded-full ${isMuted ? 'bg-red-600' : 'bg-gray-700'}`}>
+            {isMuted ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-white" />}
           </button>
-        )}
-        <button onClick={endCall} className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600">
-          <X className="w-8 h-8 text-white" />
-        </button>
-        <button className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
-          <ChevronDown className="w-6 h-6 text-white" />
-        </button>
-      </div>
+          <button onClick={toggleSpeaker} className={`p-3 rounded-full ${isSpeaker ? 'bg-green-600' : 'bg-gray-700'}`}>
+            {isSpeaker ? <Volume2 className="w-6 h-6 text-white" /> : <VolumeX className="w-6 h-6 text-white" />}
+          </button>
+          {callType === "voice" && (
+            <button onClick={() => {}} className="p-3 bg-gray-700 rounded-full">
+              <Video className="w-6 h-6 text-white" />
+            </button>
+          )}
+          <button onClick={endCall} className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+            <X className="w-8 h-8 text-white" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
-
 
 function ChatContainer() {
   const {
@@ -585,9 +804,28 @@ function ChatContainer() {
           callType={currentCallType}
         />
       )} */}
-
+{/* 
       {incomingCall && !isCalling && <IncomingCallModal {...incomingCall} onAccept={handleAccept} onReject={handleReject} />}
-      {isCalling && selectedUser && <VoiceCall receiverId={selectedUser._id} selectedUser={selectedUser} onEndCall={() => setIsCalling(false)} callType={currentCallType} />}
+      {isCalling && selectedUser && <VoiceCall receiverId={selectedUser._id} selectedUser={selectedUser} onEndCall={() => setIsCalling(false)} callType={currentCallType} />} */}
+
+        {incomingCall && !isCalling && (
+        <IncomingCallModal
+          callerId={incomingCall.callerId}
+          callerName={incomingCall.callerName}
+          offer={incomingCall.offer}
+          onAccept={handleAccept}
+          onReject={handleReject}
+        />
+      )}
+      {isCalling && selectedUser && (
+        <VoiceCall
+          isIncoming={false} // Always false for active call screen
+          receiverId={selectedUser._id}
+          selectedUser={selectedUser}
+          onEndCall={() => setIsCalling(false)}
+          callType={currentCallType}
+        />
+      )}
     </>
   );
 }
