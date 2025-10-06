@@ -9,39 +9,50 @@ import { getDateSeparatorLabel } from "../lib/getDateSeparatorLabel";
 import { Check, CheckCheck, ChevronDown, X } from "lucide-react";
 import Peer from "simple-peer";
 
-// Incoming Call Modal Component
+// Updated: Full Screen Incoming Call Modal (WhatsApp Style – Image 2)
 function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) {
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg text-center max-w-sm w-full mx-4">
-        <img
-          src="/avatar.png" // Fetch caller profile pic via API if needed
-          alt={callerName}
-          className="w-24 h-24 rounded-full mx-auto mb-4"
-        />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Incoming Voice Call</h2>
-        <p className="text-gray-600 dark:text-slate-400 mb-6">{callerName} is calling</p>
-        <div className="flex space-x-4 justify-center">
-          <button
-            onClick={onReject}
-            className="p-3 bg-red-500 text-white rounded-full hover:bg-red-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <button
-            onClick={onAccept}
-            className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600"
-          >
-            <Phone className="w-6 h-6" />
-          </button>
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
+      {/* Top: Avatar & Name */}
+      <div className="text-center flex flex-col items-center">
+        <div className="w-32 h-32 bg-green-500 rounded-full flex items-center justify-center mb-4">
+          <User className="w-16 h-16 text-white" /> {/* Or img src={callerPic} */}
         </div>
+        <h2 className="text-2xl font-semibold text-white mb-1">{callerName}</h2>
+        <p className="text-green-400 text-lg">Incoming Voice Call</p>
+      </div>
+
+      {/* Bottom: Buttons */}
+      <div className="flex space-x-6">
+        <button 
+          onClick={onReject} 
+          className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700"
+        >
+          <X className="w-8 h-8 text-white" />
+        </button>
+        <button 
+          onClick={onAccept} 
+          className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600"
+        >
+          <Phone className="w-8 h-8 text-white rotate-180" /> {/* WhatsApp style flip */}
+        </button>
       </div>
     </div>
   );
 }
 
-// Voice Call Interface
-function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callType, selectedUser }) {
+// Updated: Full Screen Voice Call (Caller Side – Image 1 Style)
+function VoiceCall({ 
+  isIncoming = false, 
+  callerId, 
+  receiverId, 
+  offer, 
+  onEndCall, 
+  callType = "voice",
+  selectedUser 
+}) {
+  const { onlineUsers } = useAuthStore(); // For offline/online status
+  const isReceiverOnline = onlineUsers.includes(selectedUser?._id);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [peer, setPeer] = useState(null);
@@ -63,7 +74,7 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
         callStartTime.current = Date.now();
       } catch (err) {
         console.error("Media error:", err);
-        setError("Allow microphone to make calls.");
+        setError("Allow microphone for calls.");
         setIsInitializing(false);
       }
     };
@@ -73,13 +84,9 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
   }, [callType]);
 
   useEffect(() => {
-    // Wait for CDN load
     if (typeof window.SimplePeer === 'undefined') {
       setTimeout(() => {
-        if (typeof window.SimplePeer === 'undefined') {
-          setError("Call library not loaded. Refresh page.");
-          onEndCall();
-        }
+        if (typeof window.SimplePeer === 'undefined') setError("Call library load failed. Refresh.");
       }, 1000);
       return;
     }
@@ -97,9 +104,9 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
         stream: localStream,
         config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
       });
-      console.log("✅ Peer initialized");
+      console.log("✅ Peer ready");
     } catch (err) {
-      console.error("Peer error:", err);
+      console.error("Peer init error:", err);
       setError("Call setup failed.");
       setIsInitializing(false);
       return;
@@ -108,10 +115,8 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
     p.on("signal", (data) => {
       if (!isIncoming) {
         socket.emit("call-user", { receiverId: receiverId || selectedUser._id, offer: data });
-        console.log("📞 Offer sent");
       } else {
         socket.emit("answer-call", { callerId, answer: data });
-        console.log("📞 Answer sent");
       }
     });
 
@@ -119,12 +124,11 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
       setRemoteStream(stream);
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
       setIsConnected(true);
-      console.log("✅ Connected – stream received");
     });
 
     p.on("error", (err) => {
       console.error("Peer error:", err);
-      setError("Connection failed.");
+      setError("Connection lost.");
       onEndCall();
     });
 
@@ -135,10 +139,9 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
 
     if (isIncoming && offer) p.signal(offer);
 
-    // Socket listeners
     const handleAccepted = ({ answer }) => !isIncoming && p.signal(answer);
-    const handleRejected = () => endCall();
-    const handleEnded = () => endCall();
+    const handleRejected = endCall;
+    const handleEnded = endCall;
     const handleIce = ({ candidate }) => p.signal(candidate);
 
     socket.on("call-accepted", handleAccepted);
@@ -158,18 +161,21 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
   const endCall = () => {
     const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
     const status = isConnected ? "completed" : "missed";
-    const logReceiverId = isIncoming ? callerId : (receiverId || selectedUser._id);
-    createCallLog({ receiverId: logReceiverId, type: isIncoming ? "incoming" : "outgoing", duration, status });
+    createCallLog({ 
+      receiverId: isIncoming ? callerId : (receiverId || selectedUser._id), 
+      type: isIncoming ? "incoming" : "outgoing", 
+      duration, 
+      status 
+    });
     onEndCall();
     peer?.destroy();
     localStream?.getTracks().forEach(track => track.stop());
-    socket.emit("end-call", { receiverId: logReceiverId });
-    console.log("📞 Call ended:", { duration, status });
+    socket.emit("end-call", { receiverId: isIncoming ? callerId : (receiverId || selectedUser._id) });
   };
 
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 text-white">
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50 text-white">
         <div className="bg-red-500 p-4 rounded-lg text-center max-w-sm">
           <p className="mb-4">{error}</p>
           <button onClick={onEndCall} className="bg-white text-red-500 px-4 py-2 rounded">Close</button>
@@ -180,7 +186,7 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
 
   if (isInitializing) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 text-white">
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 text-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
           <p>Starting call...</p>
@@ -189,31 +195,46 @@ function VoiceCall({ isIncoming, callerId, receiverId, offer, onEndCall, callTyp
     );
   }
 
-  const title = isIncoming ? "Ringing..." : isConnected ? "Connected" : "Calling...";
+  // Status: Offline = "Calling...", Online = "Ringing..." (for caller)
+  const statusText = !isIncoming ? (isReceiverOnline ? "Ringing..." : "Calling...") : "Ringing...";
   const duration = isConnected ? Math.floor((Date.now() - callStartTime.current) / 1000) : 0;
   const mins = Math.floor(duration / 60);
   const secs = duration % 60;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50 text-white">
-      <div className="text-center mb-8">
-        <img src={selectedUser?.profilePic || "/avatar.png"} alt="" className="w-32 h-32 rounded-full mx-auto mb-4" />
-        <h2 className="text-2xl font-semibold">{selectedUser?.fullName}</h2>
-        <p className="text-gray-400">{title}</p>
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
+      {/* Top: Avatar & Name */}
+      <div className="text-center flex flex-col items-center">
+        <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-4">
+          <User className="w-16 h-16 text-white" /> {/* Or img */}
+        </div>
+        <h2 className="text-2xl font-semibold text-white mb-1">{selectedUser?.fullName}</h2>
+        <p className="text-green-400 text-lg">{statusText}</p>
         {isConnected && <p className="text-sm text-green-400 mt-2">{mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}</p>}
       </div>
+
+      {/* Video (if video call) */}
+      <video ref={remoteVideoRef} autoPlay className={`w-64 h-64 bg-gray-900 rounded-full ${callType === 'video' ? 'block' : 'hidden'}`} />
       <video ref={myVideoRef} autoPlay muted className="hidden" />
-      <video ref={remoteVideoRef} autoPlay className={`w-64 h-64 bg-gray-900 rounded-full mb-8 ${callType === 'video' ? 'block' : 'hidden'}`} />
-      <div className="flex space-x-4">
-        {callType === "video" && <button className="p-3 bg-gray-600 text-white rounded-full hover:bg-gray-700"><Phone className="w-6 h-6" /></button>}
+
+      {/* Bottom: End Button */}
+      <div className="flex space-x-6">
+        {callType === "video" && (
+          <button className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
+            <Phone className="w-6 h-6 text-white" />
+          </button>
+        )}
         <button onClick={endCall} className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600">
-          <X className="w-8 h-8" />
+          <X className="w-8 h-8 text-white" />
         </button>
-        <button className="p-3 bg-gray-600 text-white rounded-full hover:bg-gray-700"><ChevronDown className="w-6 h-6" /></button>
+        <button className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
+          <ChevronDown className="w-6 h-6 text-white" />
+        </button>
       </div>
     </div>
   );
 }
+
 
 function ChatContainer() {
   const {
@@ -287,17 +308,27 @@ function ChatContainer() {
     console.log("Call rejected"); // Debug
   };
 
-  const startCall = () => {
+  // const startCall = () => {
+  //   if (!selectedUser || !socket) {
+  //     console.error("No selected user or socket"); // Debug
+  //     return;
+  //   }
+  //   setIsCalling(true);
+  //   setCurrentCallType("voice");
+  //   console.log("Starting outgoing call to:", selectedUser._id); // Debug
+  // };
+
+  // Existing useEffects for scrolling and read receipts
+    const startCall = () => {
     if (!selectedUser || !socket) {
-      console.error("No selected user or socket"); // Debug
+      toast.error("Connection error.");
       return;
     }
     setIsCalling(true);
     setCurrentCallType("voice");
-    console.log("Starting outgoing call to:", selectedUser._id); // Debug
   };
-
-  // Existing useEffects for scrolling and read receipts
+  
+  
   useEffect(() => {
     if (messageEndRef.current && !showScrollButton) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
