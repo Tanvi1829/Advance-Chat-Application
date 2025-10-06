@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import { getDateSeparatorLabel } from "../lib/getDateSeparatorLabel";
-import { Check, CheckCheck, ChevronDown, X, Phone, User  } from "lucide-react";
+import { Check, CheckCheck, ChevronDown, X, Phone, User, Mic, MicOff, Volume2, VolumeX, Video, SwitchCamera  } from "lucide-react";
 import Peer from "simple-peer";
 import toast from "react-hot-toast";
 
