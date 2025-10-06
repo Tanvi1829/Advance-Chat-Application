@@ -320,15 +320,71 @@ function ChatContainer() {
   // };
 
   // Existing useEffects for scrolling and read receipts
+  //   const startCall = () => {
+  //   if (!selectedUser || !socket) {
+  //     toast.error("Connection error.");
+  //     return;
+  //   }
+  //   setIsCalling(true);
+  //   setCurrentCallType("voice");
+  // };
+
     const startCall = () => {
     if (!selectedUser || !socket) {
-      toast.error("Connection error.");
+      toast.error("Connection lost – refresh.");
       return;
+    }
+    const isOnline = onlineUsers.includes(selectedUser._id.toString()); // ✅ String match
+    if (!isOnline) {
+      toast.warning("User offline – sending anyway.");
     }
     setIsCalling(true);
     setCurrentCallType("voice");
+    console.log("📞 Starting call to", selectedUser._id, "Online?", isOnline);
   };
 
+
+    useEffect(() => {
+    if (!socket) return;
+
+    const handleIncoming = ({ callerId, callerName, offer }) => {
+      console.log("📞 Incoming call in ChatContainer from", callerName, "ID:", callerId);
+      setIncomingCall({ callerId: callerId.toString(), callerName, offer }); // ✅ String ID
+    };
+
+    const handleEnded = () => {
+      console.log("📞 Call ended in ChatContainer");
+      setIsCalling(false);
+      setIncomingCall(null);
+    };
+
+    socket.on("incoming-call", handleIncoming);
+    socket.on("call-ended", handleEnded);
+    socket.on("call-failed", ({ reason }) => {
+      toast.error(reason === 'receiver-offline' ? "User went offline" : "Call failed");
+      setIsCalling(false);
+    });
+
+    return () => {
+      socket.off("incoming-call", handleIncoming);
+      socket.off("call-ended", handleEnded);
+      socket.off("call-failed");
+    };
+  }, [socket]);
+
+  const handleAccept = () => {
+    console.log("📞 Accepting call from", incomingCall.callerId);
+    setIncomingCall(null);
+    setIsCalling(true);
+    // Peer signaling in VoiceCall will emit answer
+  };
+
+  const handleReject = () => {
+    console.log("📞 Rejecting call from", incomingCall.callerId);
+    socket.emit("reject-call", { callerId: incomingCall.callerId });
+    createCallLog({ receiverId: incomingCall.callerId, type: "incoming", duration: 0, status: "declined" });
+    setIncomingCall(null);
+  };
   
   useEffect(() => {
     if (messageEndRef.current && !showScrollButton) {
@@ -511,7 +567,7 @@ function ChatContainer() {
       {selectedUser && <MessageInput />}
       
       {/* Call Overlays */}
-      {incomingCall && !isCalling && (
+      {/* {incomingCall && !isCalling && (
         <IncomingCallModal
           callerId={incomingCall.callerId}
           callerName={incomingCall.callerName}
@@ -528,7 +584,10 @@ function ChatContainer() {
           onEndCall={() => setIsCalling(false)}
           callType={currentCallType}
         />
-      )}
+      )} */}
+
+      {incomingCall && !isCalling && <IncomingCallModal {...incomingCall} onAccept={handleAccept} onReject={handleReject} />}
+      {isCalling && selectedUser && <VoiceCall receiverId={selectedUser._id} selectedUser={selectedUser} onEndCall={() => setIsCalling(false)} callType={currentCallType} />}
     </>
   );
 }

@@ -158,9 +158,38 @@ export const useAuthStore = create((set, get) => ({
         console.log("✅ Socket connected successfully!");
         console.log("Socket ID:", newSocket.id);
         console.log("Expected user in online list:", authUser._id);
+    console.log("✅ Socket connected:", newSocket.id);
+
         
         newSocket.emit("requestOnlineUsers");
       });
+
+
+        newSocket.on("incoming-call", ({ callerId, callerName, offer }) => {
+    console.log("📞 Global: Incoming call received from", callerName, "ID:", callerId);
+    // Trigger app-level event or store state – for now, log; handle in ChatContainer
+  });
+
+  newSocket.on("call-accepted", ({ answer }) => {
+    console.log("📞 Global: Call accepted, answer:", answer);
+  });
+
+  newSocket.on("call-rejected", () => {
+    console.log("📞 Global: Call rejected");
+  });
+
+  newSocket.on("call-ended", () => {
+    console.log("📞 Global: Call ended");
+  });
+
+  newSocket.on("ice-candidate", ({ candidate }) => {
+    console.log("🧊 Global: ICE candidate");
+  });
+
+  newSocket.on("call-failed", ({ reason }) => {
+    console.log("📞 Global: Call failed:", reason);
+    toast.error(`Call failed: ${reason === 'receiver-offline' ? 'User offline' : 'Unknown error'}`);
+  });
 
       newSocket.on("connect_error", (error) => {
         console.error("Socket connection error:", error);
