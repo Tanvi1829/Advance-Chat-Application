@@ -6,8 +6,9 @@ import MessageInput from "./MessageInput";
 import MessagesLoadingSkeleton from "./MessagesLoadingSkeleton";
 import { useEffect, useRef, useState } from "react";
 import { getDateSeparatorLabel } from "../lib/getDateSeparatorLabel";
-import { Check, CheckCheck, ChevronDown, X } from "lucide-react";
+import { Check, CheckCheck, ChevronDown, X, Phone, User  } from "lucide-react";
 import Peer from "simple-peer";
+import toast from "react-hot-toast";
 
 // Updated: Full Screen Incoming Call Modal (WhatsApp Style – Image 2)
 function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) {
@@ -327,7 +328,7 @@ function ChatContainer() {
     setIsCalling(true);
     setCurrentCallType("voice");
   };
-  
+
   
   useEffect(() => {
     if (messageEndRef.current && !showScrollButton) {
