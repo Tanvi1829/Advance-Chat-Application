@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
-import { Phone, Mic, MicOff, Volume2, VolumeX, Video, ChevronDown, X } from "lucide-react";
+import { Phone, Mic, MicOff, Volume2, VolumeX, Video, ChevronDown, X, SwitchCamera } from "lucide-react";
 import toast from "react-hot-toast";
 
 function VoiceCall({ 
@@ -19,12 +19,12 @@ function VoiceCall({
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [peer, setPeer] = useState(null);
-  const [callState, setCallState] = useState(isIncoming ? "ringing" : (isReceiverOnline ? "ringing" : "calling"));
+  const [callState, setCallState] = useState("initializing"); // Start with initializing
   const [error, setError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaker, setIsSpeaker] = useState(true);
-  const myAudioRef = useRef(null); // Local audio (muted)
+  const myAudioRef = useRef(null); // Local audio muted
   const remoteAudioRef = useRef(null); // Remote audio
   const myVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -44,19 +44,18 @@ function VoiceCall({
         if (callType === "voice") {
           if (myAudioRef.current) {
             myAudioRef.current.srcObject = stream;
-            myAudioRef.current.muted = true; // Local self-mute
+            myAudioRef.current.muted = true; // Self-mute
           }
         } else {
           if (myVideoRef.current) myVideoRef.current.srcObject = stream;
         }
-        // Enable tracks
         stream.getAudioTracks().forEach(track => track.enabled = true);
         callStartTime.current = Date.now();
         setIsInitializing(false);
-        console.log("✅ Local stream attached & enabled");
+        console.log("✅ Local stream ready");
       } catch (err) {
-        console.error("getUserMedia error:", err);
-        setError("Allow mic/camera for audio/video.");
+        console.error("Media error:", err);
+        setError("Allow mic/camera for calls.");
       }
     };
     initStream();
@@ -79,53 +78,49 @@ function VoiceCall({
         config: { 
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'turn:nomane.expert:3478', username: 'nomane', credential: 'nomane' } // NAT fix
+            { urls: 'turn:nomane.expert:3478', username: 'nomane', credential: 'nomane' }
           ] 
         }
       });
-      console.log("✅ Peer initialized");
+      console.log("✅ Peer ready");
     } catch (err) {
-      console.error("Peer init error:", err);
       setError("Call setup failed.");
-      setIsInitializing(false);
       return;
     }
 
-    // Offline receiver: No emit, stay calling
+    // Set initial state
     if (!isIncoming && !isReceiverOnline) {
       setCallState("calling");
-      return;
-    }
-
-    p.on("signal", (data) => {
-      if (!isIncoming) {
+    } else if (!isIncoming) {
+      setCallState("ringing");
+      // Emit offer for caller
+      p.on("signal", (data) => {
         socket.emit("call-user", { receiverId: receiverId || selectedUser._id, offer: data });
-        console.log("📞 Offer emitted (caller)");
-        setCallState("ringing");
-      } else {
+        console.log("📞 Offer sent (caller)");
+      });
+    } else {
+      // Receiver: Signal offer immediately
+      p.signal(offer);
+      setCallState("connecting");
+      p.on("signal", (data) => {
         socket.emit("answer-call", { callerId, answer: data });
-        console.log("📞 Answer emitted (receiver)");
-        setCallState("connecting");
-      }
-    });
+        console.log("📞 Answer sent (receiver)");
+      });
+    }
 
     p.on("stream", (stream) => {
       setRemoteStream(stream);
-      // Attach & play remote stream
       if (callType === "voice") {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = stream;
-          remoteAudioRef.current.play().then(() => {
-            console.log("✅ Remote audio playing");
-          }).catch(e => console.error("Audio play failed:", e));
+          remoteAudioRef.current.play().catch(e => console.error("Remote audio play error:", e));
         }
       } else {
         if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
       }
-      // Enable remote audio tracks
       stream.getAudioTracks().forEach(track => track.enabled = true);
       setCallState("connected");
-      console.log("✅ Stream received – connected on", isIncoming ? "receiver" : "caller");
+      console.log("✅ Connected – audio/video active");
     });
 
     p.on("icecandidate", (candidate) => {
@@ -139,27 +134,19 @@ function VoiceCall({
 
     p.on("error", (err) => {
       console.error("Peer error:", err);
-      if (err.type !== 'close') setError("Network issue.");
+      if (err.type !== 'close') setError("Connection issue.");
     });
 
-    p.on("close", () => {
-      console.log("Peer closed – ending if not manual");
-      endCall();
-    });
+    p.on("close", endCall);
 
     setPeer(p);
 
-    if (isIncoming && offer) {
-      p.signal(offer);
-      setCallState("connecting");
-    }
-
-    // ✅ Fix: Caller transition on accept
+    // Socket events
     const handleAccepted = ({ answer }) => {
-      if (!isIncoming) { // Caller only
-        console.log("📞 Accepted – signaling answer");
+      if (!isIncoming) {
         p.signal(answer);
-        setCallState("connecting"); // Wait for stream
+        setCallState("connecting");
+        console.log("📞 Accepted – connecting (caller)");
       }
     };
 
@@ -214,9 +201,27 @@ function VoiceCall({
     socket.emit("end-call", { receiverId: isIncoming ? callerId : (receiverId || selectedUser._id) });
   };
 
-  if (error) return ;
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 text-white">
+        <div className="bg-red-500 p-4 rounded-lg text-center max-w-sm">
+          <p className="mb-4">{error}</p>
+          <button onClick={onEndCall} className="bg-white text-red-500 px-4 py-2 rounded">Close</button>
+        </div>
+      </div>
+    );
+  }
 
-  if (isInitializing) return ;
+  if (isInitializing) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 text-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Starting call...</p>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusText = () => {
     switch (callState) {
@@ -244,7 +249,7 @@ function VoiceCall({
         {callState === "connected" && <p className="text-sm text-white mt-2">{mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}</p>}
       </div>
 
-      {/* Audio/Video Elements */}
+      {/* Audio/Video */}
       {callType === "voice" && (
         <>
           <audio ref={remoteAudioRef} autoPlay className="hidden" />
