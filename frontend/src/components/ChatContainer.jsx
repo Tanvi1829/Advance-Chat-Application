@@ -766,6 +766,8 @@ function ChatContainer() {
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null); // {callerId, callerName, offer}
+  const [callIsIncoming, setCallIsIncoming] = useState(false); // New: Track if this call is incoming
+
   const [isCalling, setIsCalling] = useState(false); // Shared outgoing call state
   const [currentCallType, setCurrentCallType] = useState("voice");
 
