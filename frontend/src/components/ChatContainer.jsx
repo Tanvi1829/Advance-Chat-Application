@@ -840,18 +840,30 @@ function ChatContainer() {
   //   setCurrentCallType("voice");
   // };
 
-    const startCall = () => {
+  //   const startCall = () => {
+  //   if (!selectedUser || !socket) {
+  //     toast.error("Connection lost – refresh.");
+  //     return;
+  //   }
+  //   const isOnline = onlineUsers.includes(selectedUser._id.toString()); // ✅ String match
+  //   if (!isOnline) {
+  //     toast.warning("User offline – sending anyway.");
+  //   }
+  //   setIsCalling(true);
+  //   setCurrentCallType("voice");
+  //   console.log("📞 Starting call to", selectedUser._id, "Online?", isOnline);
+  // };
+
+
+  
+  const startCall = () => {
     if (!selectedUser || !socket) {
-      toast.error("Connection lost – refresh.");
+      toast.error("Connection issue.");
       return;
     }
-    const isOnline = onlineUsers.includes(selectedUser._id.toString()); // ✅ String match
-    if (!isOnline) {
-      toast.warning("User offline – sending anyway.");
-    }
     setIsCalling(true);
+    setCallIsIncoming(false); // Outgoing
     setCurrentCallType("voice");
-    console.log("📞 Starting call to", selectedUser._id, "Online?", isOnline);
   };
 
 
@@ -1119,8 +1131,31 @@ function ChatContainer() {
         />
       )} */}
 
-            {incomingCall && !isCalling && <IncomingCallModal {...incomingCall} onAccept={handleAccept} onReject={handleReject} />}
-      {isCalling && selectedUser && <VoiceCall receiverId={selectedUser._id} selectedUser={selectedUser} onEndCall={() => setIsCalling(false)} callType={currentCallType} />}
+             {incomingCall && !isCalling && (
+        <IncomingCallModal
+          callerId={incomingCall.callerId}
+          callerName={incomingCall.callerName}
+          offer={incomingCall.offer}
+          onAccept={handleAccept}
+          onReject={handleReject}
+        />
+      )}
+
+      {/* VoiceCall – Pass isIncoming */}
+      {isCalling && selectedUser && (
+        <VoiceCall
+          isIncoming={callIsIncoming} // ✅ Pass direction
+          callerId={callIsIncoming ? incomingCall?.callerId : undefined}
+          receiverId={!callIsIncoming ? selectedUser._id : undefined}
+          offer={callIsIncoming ? incomingCall?.offer : undefined}
+          selectedUser={selectedUser}
+          onEndCall={() => {
+            setIsCalling(false);
+            setCallIsIncoming(false);
+          }}
+          callType={currentCallType}
+        />
+      )}
     </>
   );
 }
