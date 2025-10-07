@@ -42,27 +42,27 @@ import toast from "react-hot-toast";
 //   );
 // }
 
-function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) {
-  return (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
-      <div className="text-center flex flex-col items-center">
-        <div className="w-40 h-40 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-6 shadow-2xl">
-          <img src="/avatar.png" alt={callerName} className="w-32 h-32 rounded-full" />
-        </div>
-        <h2 className="text-3xl font-bold text-white mb-2">{callerName}</h2>
-        <p className="text-green-400 text-xl">Incoming Voice Call</p>
-      </div>
-      <div className="flex space-x-8">
-        <button onClick={onReject} className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
-          <X className="w-8 h-8 text-white" />
-        </button>
-        <button onClick={onAccept} className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600">
-          <Phone className="w-8 h-8 text-white" />
-        </button>
-      </div>
-    </div>
-  );
-}
+// function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) {
+//   return (
+//     <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
+//       <div className="text-center flex flex-col items-center">
+//         <div className="w-40 h-40 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-6 shadow-2xl">
+//           <img src="/avatar.png" alt={callerName} className="w-32 h-32 rounded-full" />
+//         </div>
+//         <h2 className="text-3xl font-bold text-white mb-2">{callerName}</h2>
+//         <p className="text-green-400 text-xl">Incoming Voice Call</p>
+//       </div>
+//       <div className="flex space-x-8">
+//         <button onClick={onReject} className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
+//           <X className="w-8 h-8 text-white" />
+//         </button>
+//         <button onClick={onAccept} className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600">
+//           <Phone className="w-8 h-8 text-white" />
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
 
 // Updated: Full Screen Voice Call (Caller Side – Image 1 Style)
 // function VoiceCall({ 
@@ -478,27 +478,318 @@ function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) 
 //   );
 // }
 
+// function VoiceCall({ 
+//   isIncoming = false, 
+//   callerId, 
+//   receiverId, 
+//   offer, 
+//   onEndCall, 
+//   callType = "voice",
+//   selectedUser 
+// }) {
+//   const { onlineUsers } = useAuthStore();
+//   const isReceiverOnline = onlineUsers.includes(selectedUser?._id.toString());
+//   const [localStream, setLocalStream] = useState(null);
+//   const [remoteStream, setRemoteStream] = useState(null);
+//   const [peer, setPeer] = useState(null);
+//   const [callState, setCallState] = useState(isIncoming ? "ringing" : (isReceiverOnline ? "ringing" : "calling"));
+//   const [error, setError] = useState(null);
+//   const [isInitializing, setIsInitializing] = useState(true);
+//   const [isMuted, setIsMuted] = useState(false);
+//   const [isSpeaker, setIsSpeaker] = useState(true);
+//   const myAudioRef = useRef(null); // Local audio
+//   const remoteAudioRef = useRef(null); // Remote audio
+//   const myVideoRef = useRef(null);
+//   const remoteVideoRef = useRef(null);
+//   const { socket } = useAuthStore();
+//   const { createCallLog } = useChatStore();
+//   const callStartTime = useRef(Date.now());
+
+//   useEffect(() => {
+//     const initStream = async () => {
+//       try {
+//         const stream = await navigator.mediaDevices.getUserMedia({ 
+//           video: callType === "video", 
+//           audio: true 
+//         });
+//         setLocalStream(stream);
+//         // Attach local stream
+//         if (callType === "voice") {
+//           if (myAudioRef.current) {
+//             myAudioRef.current.srcObject = stream;
+//             myAudioRef.current.muted = true; // Local muted
+//           }
+//         } else {
+//           if (myVideoRef.current) myVideoRef.current.srcObject = stream;
+//         }
+//         stream.getAudioTracks().forEach(track => (track.enabled = true));
+//         callStartTime.current = Date.now();
+//         setIsInitializing(false);
+//         console.log("✅ Local stream ready – mic enabled");
+//       } catch (err) {
+//         console.error("getUserMedia error:", err);
+//         setError("Allow mic for audio.");
+//       }
+//     };
+//     initStream();
+
+//     return () => localStream?.getTracks().forEach(track => track.stop());
+//   }, [callType]);
+
+//   useEffect(() => {
+//     if (typeof window.SimplePeer === 'undefined' || !localStream || !socket || !selectedUser) return;
+
+//     let p;
+//     try {
+//       p = new window.SimplePeer({
+//         initiator: !isIncoming,
+//         trickle: false,
+//         stream: localStream,
+//         config: { 
+//           iceServers: [
+//             { urls: 'stun:stun.l.google.com:19302' },
+//             { urls: 'turn:nomane.expert:3478', username: 'nomane', credential: 'nomane' }
+//           ] 
+//         }
+//       });
+//       console.log("✅ Peer created");
+//     } catch (err) {
+//       console.error("Peer error:", err);
+//       setError("Setup failed.");
+//       return;
+//     }
+
+//     // Caller offline receiver: No emit, stay calling
+//     if (!isIncoming && !isReceiverOnline) {
+//       setCallState("calling");
+//       return;
+//     }
+
+//     p.on("signal", (data) => {
+//       if (!isIncoming) {
+//         // Caller: Emit offer
+//         socket.emit("call-user", { receiverId: receiverId || selectedUser._id, offer: data });
+//         console.log("📞 Offer emitted from caller");
+//         setCallState("ringing");
+//       } else {
+//         // Receiver: Emit answer on accept
+//         socket.emit("answer-call", { callerId, answer: data });
+//         console.log("📞 Answer emitted from receiver");
+//         setCallState("connecting");
+//       }
+//     });
+
+//     p.on("stream", (stream) => {
+//       setRemoteStream(stream);
+//       // Attach remote stream
+//       if (callType === "voice") {
+//         if (remoteAudioRef.current) {
+//           remoteAudioRef.current.srcObject = stream;
+//           remoteAudioRef.current.play().then(() => {
+//             console.log("✅ Remote audio playing");
+//           }).catch(e => console.error("Remote audio play failed:", e));
+//         }
+//       } else {
+//         if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+//       }
+//       stream.getAudioTracks().forEach(track => (track.enabled = true));
+//       setCallState("connected");
+//       console.log("✅ Stream received – transitioning to connected on", isIncoming ? "receiver" : "caller");
+//     });
+
+//     p.on("icecandidate", (candidate) => {
+//       if (candidate) {
+//         socket.emit("ice-candidate", { 
+//           receiverId: !isIncoming ? (receiverId || selectedUser._id) : callerId, 
+//           candidate 
+//         });
+//       }
+//     });
+
+//     p.on("error", (err) => {
+//       console.error("Peer error:", err);
+//       if (err.type !== 'close') setError("Network error.");
+//     });
+
+//     p.on("close", () => {
+//       console.log("Peer closed – ending call");
+//       endCall();
+//     });
+
+//     setPeer(p);
+
+//     if (isIncoming && offer) {
+//       p.signal(offer);
+//       setCallState("connecting");
+//     }
+
+//     // Key Fix: Call-accepted handler for caller transition
+//     const handleAccepted = ({ answer }) => {
+//       if (!isIncoming) { // Only for caller
+//         console.log("📞 Call accepted – signaling answer and connecting");
+//         p.signal(answer);
+//         setCallState("connecting"); // Caller: Accepted → Connecting (wait for stream)
+//       }
+//     };
+
+//     const handleRejected = () => {
+//       setCallState("rejected");
+//       setTimeout(onEndCall, 1500);
+//     };
+
+//     const handleEnded = endCall;
+
+//     const handleIce = ({ candidate }) => p.signal(candidate);
+
+//     socket.on("call-accepted", handleAccepted);
+//     socket.on("call-rejected", handleRejected);
+//     socket.on("call-ended", handleEnded);
+//     socket.on("ice-candidate", handleIce);
+
+//     return () => {
+//       socket.off("call-accepted", handleAccepted);
+//       socket.off("call-rejected", handleRejected);
+//       socket.off("call-ended", handleEnded);
+//       socket.off("ice-candidate", handleIce);
+//       p?.destroy();
+//     };
+//   }, [localStream, isIncoming, callerId, receiverId, offer, socket, selectedUser, callType, onEndCall, isReceiverOnline]);
+
+//   const toggleMute = () => {
+//     if (localStream) {
+//       const audioTrack = localStream.getAudioTracks()[0];
+//       if (audioTrack) {
+//         audioTrack.enabled = !audioTrack.enabled;
+//         setIsMuted(!audioTrack.enabled);
+//       }
+//     }
+//   };
+
+//   const toggleSpeaker = () => setIsSpeaker(!isSpeaker);
+
+//   const endCall = () => {
+//     setCallState("ended");
+//     const duration = Math.floor((Date.now() - callStartTime.current) / 1000);
+//     const status = callState === "connected" ? "completed" : "missed";
+//     createCallLog({ 
+//       receiverId: isIncoming ? callerId : (receiverId || selectedUser._id), 
+//       type: isIncoming ? "incoming" : "outgoing", 
+//       duration, 
+//       status 
+//     });
+//     onEndCall();
+//     peer?.destroy();
+//     localStream?.getTracks().forEach(track => track.stop());
+//     socket.emit("end-call", { receiverId: isIncoming ? callerId : (receiverId || selectedUser._id) });
+//   };
+
+//   if (error) return ;
+
+//   if (isInitializing) return ;
+
+//   const getStatusText = () => {
+//     switch (callState) {
+//       case "calling": return "Calling...";
+//       case "ringing": return "Ringing...";
+//       case "connecting": return "Connecting...";
+//       case "connected": return "Connected";
+//       case "rejected": return "Rejected";
+//       default: return "Calling...";
+//     }
+//   };
+
+//   const duration = callState === "connected" ? Math.floor((Date.now() - callStartTime.current) / 1000) : 0;
+//   const mins = Math.floor(duration / 60);
+//   const secs = duration % 60;
+
+//   return (
+//     <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
+//       <div className="text-center flex flex-col items-center">
+//         <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-2xl">
+//           <img src={selectedUser?.profilePic || "/avatar.png"} alt="" className="w-28 h-28 rounded-full" />
+//         </div>
+//         <h2 className="text-2xl font-bold text-white mb-1">{selectedUser?.fullName}</h2>
+//         <p className="text-green-400 text-lg">{getStatusText()}</p>
+//         {callState === "connected" && <p className="text-sm text-white mt-2">{mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}</p>}
+//       </div>
+
+//       {/* Media Elements */}
+//       {callType === "voice" && (
+//         <>
+//           <audio ref={remoteAudioRef} autoPlay className="hidden" />
+//           <audio ref={myAudioRef} autoPlay muted className="hidden" />
+//         </>
+//       )}
+//       {callType === "video" && (
+//         <>
+//           <video ref={remoteVideoRef} autoPlay className="w-full h-64 bg-gray-900 rounded-2xl mt-8" />
+//           <video ref={myVideoRef} autoPlay muted className="hidden" />
+//         </>
+//       )}
+
+//       {/* Controls for Connected Only */}
+//       {callState === "connected" && (
+//         <div className="flex space-x-6 bg-black/50 backdrop-blur-sm p-4 rounded-full w-full max-w-md justify-center">
+//           {callType === "video" && <button className="p-3 bg-gray-700 rounded-full"><SwitchCamera className="w-6 h-6 text-white" /></button>}
+//           <button onClick={toggleMute} className={`p-3 rounded-full ${isMuted ? 'bg-red-600' : 'bg-gray-700'}`}>
+//             {isMuted ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-white" />}
+//           </button>
+//           <button onClick={toggleSpeaker} className={`p-3 rounded-full ${isSpeaker ? 'bg-green-600' : 'bg-gray-700'}`}>
+//             {isSpeaker ? <Volume2 className="w-6 h-6 text-white" /> : <VolumeX className="w-6 h-6 text-white" />}
+//           </button>
+//           {callType === "voice" && <button className="p-3 bg-gray-700 rounded-full"><Video className="w-6 h-6 text-white" /></button>}
+//           <button onClick={endCall} className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+//             <X className="w-8 h-8 text-white" />
+//           </button>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+function IncomingCallModal({ callerId, callerName, offer, onAccept, onReject }) {
+  return (
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-between z-50 px-4 pt-20 pb-20">
+      <div className="text-center flex flex-col items-center">
+        <div className="w-40 h-40 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-6 shadow-2xl">
+          <img src="/avatar.png" alt={callerName} className="w-32 h-32 rounded-full" />
+        </div>
+        <h2 className="text-3xl font-bold text-white mb-2">{callerName}</h2>
+        <p className="text-green-400 text-xl">Incoming Voice Call</p>
+      </div>
+      <div className="flex space-x-8">
+        <button onClick={onReject} className="w-20 h-20 bg-gray-600 rounded-full flex items-center justify-center hover:bg-gray-700">
+          <X className="w-8 h-8 text-white" />
+        </button>
+        <button onClick={onAccept} className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600">
+          <Phone className="w-8 h-8 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function VoiceCall({ 
   isIncoming = false, 
   callerId, 
   receiverId, 
   offer, 
+  selectedUser, 
   onEndCall, 
-  callType = "voice",
-  selectedUser 
+  callType = "voice"
 }) {
   const { onlineUsers } = useAuthStore();
   const isReceiverOnline = onlineUsers.includes(selectedUser?._id.toString());
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [peer, setPeer] = useState(null);
-  const [callState, setCallState] = useState(isIncoming ? "ringing" : (isReceiverOnline ? "ringing" : "calling"));
+  const [callState, setCallState] = useState(isIncoming ? "connecting" : (isReceiverOnline ? "ringing" : "calling")); // Receiver starts connecting
   const [error, setError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaker, setIsSpeaker] = useState(true);
-  const myAudioRef = useRef(null); // Local audio
-  const remoteAudioRef = useRef(null); // Remote audio
+  const myAudioRef = useRef(null);
+  const remoteAudioRef = useRef(null);
   const myVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const { socket } = useAuthStore();
@@ -513,22 +804,19 @@ function VoiceCall({
           audio: true 
         });
         setLocalStream(stream);
-        // Attach local stream
         if (callType === "voice") {
           if (myAudioRef.current) {
             myAudioRef.current.srcObject = stream;
-            myAudioRef.current.muted = true; // Local muted
+            myAudioRef.current.muted = true;
           }
         } else {
           if (myVideoRef.current) myVideoRef.current.srcObject = stream;
         }
-        stream.getAudioTracks().forEach(track => (track.enabled = true));
+        stream.getAudioTracks().forEach(track => track.enabled = true);
         callStartTime.current = Date.now();
         setIsInitializing(false);
-        console.log("✅ Local stream ready – mic enabled");
       } catch (err) {
-        console.error("getUserMedia error:", err);
-        setError("Allow mic for audio.");
+        setError("Allow mic/camera.");
       }
     };
     initStream();
@@ -552,49 +840,36 @@ function VoiceCall({
           ] 
         }
       });
-      console.log("✅ Peer created");
+      console.log("✅ Peer ready", isIncoming ? "(incoming)" : "(outgoing)");
     } catch (err) {
-      console.error("Peer error:", err);
       setError("Setup failed.");
-      return;
-    }
-
-    // Caller offline receiver: No emit, stay calling
-    if (!isIncoming && !isReceiverOnline) {
-      setCallState("calling");
       return;
     }
 
     p.on("signal", (data) => {
       if (!isIncoming) {
-        // Caller: Emit offer
         socket.emit("call-user", { receiverId: receiverId || selectedUser._id, offer: data });
-        console.log("📞 Offer emitted from caller");
+        console.log("📞 Offer sent (caller)");
         setCallState("ringing");
       } else {
-        // Receiver: Emit answer on accept
         socket.emit("answer-call", { callerId, answer: data });
-        console.log("📞 Answer emitted from receiver");
-        setCallState("connecting");
+        console.log("📞 Answer sent (receiver)");
       }
     });
 
     p.on("stream", (stream) => {
       setRemoteStream(stream);
-      // Attach remote stream
       if (callType === "voice") {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = stream;
-          remoteAudioRef.current.play().then(() => {
-            console.log("✅ Remote audio playing");
-          }).catch(e => console.error("Remote audio play failed:", e));
+          remoteAudioRef.current.play().catch(e => console.error("Remote audio play error:", e));
         }
       } else {
         if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
       }
-      stream.getAudioTracks().forEach(track => (track.enabled = true));
+      stream.getAudioTracks().forEach(track => track.enabled = true);
       setCallState("connected");
-      console.log("✅ Stream received – transitioning to connected on", isIncoming ? "receiver" : "caller");
+      console.log("✅ Connected");
     });
 
     p.on("icecandidate", (candidate) => {
@@ -608,27 +883,24 @@ function VoiceCall({
 
     p.on("error", (err) => {
       console.error("Peer error:", err);
-      if (err.type !== 'close') setError("Network error.");
+      if (err.type !== 'close') setError("Connection issue.");
     });
 
-    p.on("close", () => {
-      console.log("Peer closed – ending call");
-      endCall();
-    });
+    p.on("close", endCall);
 
     setPeer(p);
 
+    // Receiver: Signal offer immediately (after accept in ChatContainer)
     if (isIncoming && offer) {
       p.signal(offer);
-      setCallState("connecting");
+      console.log("📞 Offer signaled (receiver)");
     }
 
-    // Key Fix: Call-accepted handler for caller transition
     const handleAccepted = ({ answer }) => {
-      if (!isIncoming) { // Only for caller
-        console.log("📞 Call accepted – signaling answer and connecting");
+      if (!isIncoming) {
         p.signal(answer);
-        setCallState("connecting"); // Caller: Accepted → Connecting (wait for stream)
+        setCallState("connecting");
+        console.log("📞 Accepted – connecting (caller)");
       }
     };
 
@@ -683,9 +955,27 @@ function VoiceCall({
     socket.emit("end-call", { receiverId: isIncoming ? callerId : (receiverId || selectedUser._id) });
   };
 
-  if (error) return ;
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 text-white">
+        <div className="bg-red-500 p-4 rounded-lg text-center max-w-sm">
+          <p className="mb-4">{error}</p>
+          <button onClick={onEndCall} className="bg-white text-red-500 px-4 py-2 rounded">Close</button>
+        </div>
+      </div>
+    );
+  }
 
-  if (isInitializing) return ;
+  if (isInitializing) {
+    return (
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 text-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Starting call...</p>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusText = () => {
     switch (callState) {
@@ -766,9 +1056,9 @@ function ChatContainer() {
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null); // {callerId, callerName, offer}
-  const [callIsIncoming, setCallIsIncoming] = useState(false); // New: Track if this call is incoming
+  const [callIsIncoming, setCallIsIncoming] = useState(false); // Track incoming
 
-  const [isCalling, setIsCalling] = useState(false); // Shared outgoing call state
+  const [isCalling, setIsCalling] = useState(false);
   const [currentCallType, setCurrentCallType] = useState("voice");
 
   useEffect(() => {
@@ -777,94 +1067,51 @@ function ChatContainer() {
     }
   }, [selectedUser, getMessagesByUserId, socket]);
 
-  // Socket listeners for incoming calls (global)
+  // Socket listeners
   useEffect(() => {
     if (!socket) return;
 
-    const handleIncomingCall = ({ callerId, callerName, offer }) => {
-      console.log("Incoming call received:", callerId, callerName); // Debug
+    const handleIncoming = ({ callerId, callerName, offer }) => {
+      console.log("📞 Incoming call:", callerName);
       setIncomingCall({ callerId, callerName, offer });
+      setCallIsIncoming(true);
     };
 
-    const handleCallEnded = () => {
-      console.log("Call ended via socket"); // Debug
+    const handleEnded = () => {
       setIsCalling(false);
       setIncomingCall(null);
+      setCallIsIncoming(false);
     };
 
-    socket.on("incoming-call", handleIncomingCall);
-    socket.on("call-ended", handleCallEnded);
+    socket.on("incoming-call", handleIncoming);
+    socket.on("call-ended", handleEnded);
 
     return () => {
-      socket.off("incoming-call", handleIncomingCall);
-      socket.off("call-ended", handleCallEnded);
+      socket.off("incoming-call", handleIncoming);
+      socket.off("call-ended", handleEnded);
     };
   }, [socket]);
 
-  const handleAcceptCall = () => {
+  const handleAccept = () => {
+    console.log("📞 Accepting – starting call");
     setIncomingCall(null);
     setIsCalling(true);
-    setCurrentCallType("voice");
-    console.log("Call accepted"); // Debug
   };
 
-  const handleRejectCall = () => {
-    const callerId = incomingCall.callerId;
+  const handleReject = () => {
+    const { callerId } = incomingCall;
     setIncomingCall(null);
     socket.emit("reject-call", { callerId });
-    // Create missed log
-    createCallLog({
-      receiverId: callerId,
-      type: "incoming",
-      duration: 0,
-      status: "missed",
-    });
-    console.log("Call rejected"); // Debug
+    createCallLog({ receiverId: callerId, type: "incoming", duration: 0, status: "missed" });
   };
 
-  // const startCall = () => {
-  //   if (!selectedUser || !socket) {
-  //     console.error("No selected user or socket"); // Debug
-  //     return;
-  //   }
-  //   setIsCalling(true);
-  //   setCurrentCallType("voice");
-  //   console.log("Starting outgoing call to:", selectedUser._id); // Debug
-  // };
-
-  // Existing useEffects for scrolling and read receipts
-  //   const startCall = () => {
-  //   if (!selectedUser || !socket) {
-  //     toast.error("Connection error.");
-  //     return;
-  //   }
-  //   setIsCalling(true);
-  //   setCurrentCallType("voice");
-  // };
-
-  //   const startCall = () => {
-  //   if (!selectedUser || !socket) {
-  //     toast.error("Connection lost – refresh.");
-  //     return;
-  //   }
-  //   const isOnline = onlineUsers.includes(selectedUser._id.toString()); // ✅ String match
-  //   if (!isOnline) {
-  //     toast.warning("User offline – sending anyway.");
-  //   }
-  //   setIsCalling(true);
-  //   setCurrentCallType("voice");
-  //   console.log("📞 Starting call to", selectedUser._id, "Online?", isOnline);
-  // };
-
-
-  
   const startCall = () => {
     if (!selectedUser || !socket) {
       toast.error("Connection issue.");
       return;
     }
     setIsCalling(true);
-    setCallIsIncoming(false); // Outgoing
+    setCallIsIncoming(false);
     setCurrentCallType("voice");
   };
 
@@ -897,19 +1144,19 @@ function ChatContainer() {
     };
   }, [socket]);
 
-  const handleAccept = () => {
-    console.log("📞 Accepting call from", incomingCall.callerId);
-    setIncomingCall(null);
-    setIsCalling(true);
-    // Peer signaling in VoiceCall will emit answer
-  };
+  // const handleAccept = () => {
+  //   console.log("📞 Accepting call from", incomingCall.callerId);
+  //   setIncomingCall(null);
+  //   setIsCalling(true);
+  //   // Peer signaling in VoiceCall will emit answer
+  // };
 
-  const handleReject = () => {
-    console.log("📞 Rejecting call from", incomingCall.callerId);
-    socket.emit("reject-call", { callerId: incomingCall.callerId });
-    createCallLog({ receiverId: incomingCall.callerId, type: "incoming", duration: 0, status: "declined" });
-    setIncomingCall(null);
-  };
+  // const handleReject = () => {
+  //   console.log("📞 Rejecting call from", incomingCall.callerId);
+  //   socket.emit("reject-call", { callerId: incomingCall.callerId });
+  //   createCallLog({ receiverId: incomingCall.callerId, type: "incoming", duration: 0, status: "declined" });
+  //   setIncomingCall(null);
+  // };
   
   useEffect(() => {
     if (messageEndRef.current && !showScrollButton) {
